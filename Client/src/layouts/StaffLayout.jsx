@@ -5,12 +5,24 @@ import StaffTopbar from '../components/staff/Topbar';
 
 const StaffLayout = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <StaffSidebar />
-      <div className="flex-1 flex flex-col">
-        <StaffTopbar />
-        <main className="flex-1 p-6 overflow-auto">
-          <Outlet />
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar - Part of flex flow, not fixed */}
+      <aside className="w-60 shrink-0 border-r bg-white">
+        <StaffSidebar />
+      </aside>
+
+      {/* Main Content Container - Flex flow manages spacing */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Topbar - Sticky for consistent header behavior */}
+        <header className="sticky top-0 z-20 bg-white border-b">
+          <StaffTopbar />
+        </header>
+
+        {/* Main Content Area - Scrollable content area */}
+        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

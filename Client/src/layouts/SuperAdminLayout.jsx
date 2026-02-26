@@ -6,17 +6,21 @@ import Topbar from '../components/superadmin/Topbar';
 const SuperAdminLayout = () => {
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar - Fixed position */}
-      <Sidebar />
+      {/* Sidebar - Part of flex flow, not fixed */}
+      <aside className="w-60 shrink-0 border-r bg-white">
+        <Sidebar />
+      </aside>
 
-      {/* Main Content - Add left margin to accommodate fixed sidebar */}
-      <div className="flex-1 flex flex-col overflow-hidden ml-64">
-        {/* Topbar */}
-        <Topbar />
+      {/* Main Content Container - Flex flow manages spacing */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Topbar - Sticky for consistent header behavior */}
+        <header className="sticky top-0 z-20 bg-white border-b">
+          <Topbar />
+        </header>
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 bg-gray-50">
-          <div className="container mx-auto">
+        {/* Main Content Area - Scrollable content area */}
+        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
+          <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
         </main>

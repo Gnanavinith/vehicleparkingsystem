@@ -2,297 +2,424 @@ import React, { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import {
+  AreaChart, Area, BarChart, Bar, ComposedChart,
+  PieChart, Pie, Cell, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, ReferenceLine,
+} from 'recharts';
+import { FaBuilding, FaUser, FaUsers, FaCar, FaMoneyBillWave, FaChartLine, FaPlus, FaSearch } from 'react-icons/fa';
+import { FiTrendingUp, FiTrendingDown, FiActivity, FiBarChart2, FiSettings, FiUserPlus, FiCheckCircle, FiAlertTriangle, FiAward, FiZap } from 'react-icons/fi';
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2';
+import { MdOutlineAdminPanelSettings } from 'react-icons/md';
+import { RiParkingBoxLine } from 'react-icons/ri';
+import { BiTrendingUp } from 'react-icons/bi';
 
-// Mock API service - replace with actual API calls
+// ─── Mock API ──────────────────────────────────────────────────────────────────
 const superAdminApi = {
-  getDashboardStats: async () => {
-    // In a real app, this would be an API call
-    return {
-      totalStands: 12,
-      totalStandAdmins: 24,
-      totalStaff: 48,
-      activeParkings: 156,
-      todayRevenue: 2450.75,
-      monthlyRevenue: 45678.90,
-    };
-  },
-  
-  getRevenueChart: async () => {
-    // Mock chart data
-    return [
-      { date: 'Jan', revenue: 3500 },
-      { date: 'Feb', revenue: 4200 },
-      { date: 'Mar', revenue: 3800 },
-      { date: 'Apr', revenue: 5100 },
-      { date: 'May', revenue: 4800 },
-      { date: 'Jun', revenue: 5300 },
-    ];
-  }
+  getDashboardStats: async () => ({
+    totalStands: 12,
+    totalStandAdmins: 24,
+    totalStaff: 48,
+    activeParkings: 156,
+    todayRevenue: 2450.75,
+    monthlyRevenue: 45678.90,
+  }),
+  getRevenueChart: async () => ([
+    { date: 'Jan', revenue: 35000, expenses: 12000, profit: 23000 },
+    { date: 'Feb', revenue: 42000, expenses: 14000, profit: 28000 },
+    { date: 'Mar', revenue: 38000, expenses: 13000, profit: 25000 },
+    { date: 'Apr', revenue: 51000, expenses: 16000, profit: 35000 },
+    { date: 'May', revenue: 48000, expenses: 15000, profit: 33000 },
+    { date: 'Jun', revenue: 53000, expenses: 17000, profit: 36000 },
+    { date: 'Jul', revenue: 61000, expenses: 19000, profit: 42000 },
+    { date: 'Aug', revenue: 58000, expenses: 18000, profit: 40000 },
+  ]),
+  getOccupancyData: async () => ([
+    { name: 'Mon', value: 72 },
+    { name: 'Tue', value: 85 },
+    { name: 'Wed', value: 91 },
+    { name: 'Thu', value: 88 },
+    { name: 'Fri', value: 95 },
+    { name: 'Sat', value: 78 },
+    { name: 'Sun', value: 60 },
+  ]),
+  getStandDistribution: async () => ([
+    { name: 'Downtown', value: 35, color: '#6366f1' },
+    { name: 'Suburbs',  value: 25, color: '#22d3ee' },
+    { name: 'Airport',  value: 20, color: '#f59e0b' },
+    { name: 'Mall',     value: 20, color: '#10b981' },
+  ]),
+  getHourlyActivity: async () => ([
+    { hour: '6am',  vehicles: 12 },
+    { hour: '8am',  vehicles: 48 },
+    { hour: '10am', vehicles: 65 },
+    { hour: '12pm', vehicles: 82 },
+    { hour: '2pm',  vehicles: 74 },
+    { hour: '4pm',  vehicles: 91 },
+    { hour: '6pm',  vehicles: 78 },
+    { hour: '8pm',  vehicles: 43 },
+    { hour: '10pm', vehicles: 21 },
+  ]),
 };
 
+// ─── Tokens ────────────────────────────────────────────────────────────────────
+const C = {
+  bg:          '#f1f5f9',
+  card:        '#ffffff',
+  border:      '#e2e8f0',
+  text:        '#0f172a',
+  sub:         '#475569',
+  muted:       '#94a3b8',
+  accent:      '#6366f1',
+  accentLight: '#eef2ff',
+  green:       '#10b981',
+  greenLight:  '#d1fae5',
+  amber:       '#f59e0b',
+  amberLight:  '#fef3c7',
+  red:         '#ef4444',
+  redLight:    '#fee2e2',
+  cyan:        '#0ea5e9',
+  cyanLight:   '#e0f2fe',
+  purple:      '#8b5cf6',
+  purpleLight: '#ede9fe',
+  teal:        '#14b8a6',
+  tealLight:   '#ccfbf1',
+};
+
+// ─── Custom Tooltip ────────────────────────────────────────────────────────────
+const CustomTooltip = ({ active, payload, label, prefix = '' }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: C.card, border: `1px solid ${C.border}`, borderRadius: 10,
+      padding: '10px 14px', boxShadow: '0 8px 24px rgba(15,23,42,0.1)',
+      fontFamily: 'Inter, sans-serif', minWidth: 140,
+    }}>
+      <p style={{ color: C.muted, fontSize: 11, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+      {payload.map((p, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: p.color, flexShrink: 0 }} />
+          <span style={{ color: C.sub, fontSize: 12 }}>{p.name}:</span>
+          <span style={{ color: C.text, fontSize: 12, fontWeight: 700 }}>
+            {prefix}{typeof p.value === 'number' && p.value > 999 ? p.value.toLocaleString() : p.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ─── Stat Card ─────────────────────────────────────────────────────────────────
+const StatCard = ({ label, value, Icon, iconBg, iconColor, trend, trendLabel, accentBar }) => (
+  <div style={{
+    background: C.card, border: `1px solid ${C.border}`, borderRadius: 14,
+    padding: '20px', display: 'flex', flexDirection: 'column', gap: 14,
+    boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
+    transition: 'box-shadow 0.18s, transform 0.18s',
+    cursor: 'default', overflow: 'hidden', position: 'relative',
+    fontFamily: 'Inter, sans-serif',
+  }}
+    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(15,23,42,0.1)'; }}
+    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 1px 3px rgba(15,23,42,0.06)'; }}
+  >
+    {/* top accent stripe */}
+    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: accentBar, borderRadius: '14px 14px 0 0' }} />
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ width: 40, height: 40, borderRadius: 11, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon style={{ color: iconColor, fontSize: 17 }} />
+      </div>
+      {trend !== undefined && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600,
+          color: trend >= 0 ? C.green : C.red,
+          background: trend >= 0 ? C.greenLight : C.redLight,
+          padding: '3px 8px', borderRadius: 20,
+        }}>
+          {trend >= 0 ? <FiTrendingUp size={12} /> : <FiTrendingDown size={12} />}
+          {Math.abs(trend)}%
+        </div>
+      )}
+    </div>
+    <div>
+      <p style={{ fontSize: 24, fontWeight: 700, color: C.text, letterSpacing: '-0.025em', margin: 0 }}>{value}</p>
+      <p style={{ fontSize: 12.5, color: C.sub, marginTop: 3, margin: 0 }}>{label}</p>
+    </div>
+    {trendLabel && <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>{trendLabel}</p>}
+  </div>
+);
+
+// ─── Chart Card ────────────────────────────────────────────────────────────────
+const ChartCard = ({ title, subtitle, badge, badgeColor = C.accentLight, badgeText = C.accent, children, style = {} }) => (
+  <div style={{
+    background: C.card, border: `1px solid ${C.border}`, borderRadius: 14,
+    padding: '20px 22px', boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
+    fontFamily: 'Inter, sans-serif', ...style,
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+      <div>
+        <h2 style={{ fontSize: 14, fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-0.01em' }}>{title}</h2>
+        {subtitle && <p style={{ fontSize: 12, color: C.muted, marginTop: 3, margin: 0 }}>{subtitle}</p>}
+      </div>
+      {badge && (
+        <span style={{ fontSize: 11, fontWeight: 600, background: badgeColor, color: badgeText, padding: '3px 10px', borderRadius: 20 }}>
+          {badge}
+        </span>
+      )}
+    </div>
+    {children}
+  </div>
+);
+
+// ─── Section Label ─────────────────────────────────────────────────────────────
+const SectionLabel = ({ children }) => (
+  <p style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '28px 0 12px', fontFamily: 'Inter, sans-serif' }}>
+    {children}
+  </p>
+);
+
+// ─── Dashboard ─────────────────────────────────────────────────────────────────
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { role } = useSelector(state => state.auth);
+  let role;
+  try { const auth = useSelector(s => s.auth); role = auth?.role; }
+  catch { role = 'super_admin'; }
 
   useEffect(() => {
-    if (role !== 'super_admin') {
-      navigate('/login');
-    }
+    if (role && role !== 'super_admin') navigate('/login');
   }, [role, navigate]);
 
-  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
-    queryKey: ['superadmin-dashboard-stats'],
-    queryFn: superAdminApi.getDashboardStats,
-    staleTime: 60000, // 1 minute
-  });
+  const { data: stats, isLoading, error } = useQuery({ queryKey: ['sa-stats'], queryFn: superAdminApi.getDashboardStats, staleTime: 60000 });
+  const { data: revenueData }      = useQuery({ queryKey: ['sa-revenue'], queryFn: superAdminApi.getRevenueChart, staleTime: 300000 });
+  const { data: occupancyData }    = useQuery({ queryKey: ['sa-occupancy'], queryFn: superAdminApi.getOccupancyData, staleTime: 300000 });
+  const { data: distributionData } = useQuery({ queryKey: ['sa-dist'], queryFn: superAdminApi.getStandDistribution, staleTime: 300000 });
+  const { data: activityData }     = useQuery({ queryKey: ['sa-activity'], queryFn: superAdminApi.getHourlyActivity, staleTime: 300000 });
 
-  const { data: chartData, isLoading: chartLoading } = useQuery({
-    queryKey: ['superadmin-revenue-chart'],
-    queryFn: superAdminApi.getRevenueChart,
-    staleTime: 300000, // 5 minutes
-  });
-
-  if (statsLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (statsError) {
-    return (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-        <strong className="font-bold">Error: </strong>
-        <span className="block sm:inline">{statsError.message}</span>
-      </div>
-    );
-  }
+  if (isLoading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
+      <div style={{ width: 36, height: 36, border: `3px solid ${C.accentLight}`, borderTopColor: C.accent, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+  if (error) return (
+    <div style={{ background: C.redLight, border: `1px solid #fca5a5`, borderRadius: 12, padding: '14px 18px', color: C.red, fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
+      <strong>Error:</strong> {error.message}
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search stands, admins..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+    <div style={{ background: C.bg, minHeight: '100vh', padding: '28px 32px', fontFamily: 'Inter, sans-serif' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        * { box-sizing: border-box; }
+        .qa-btn:hover { background: ${C.accentLight} !important; border-color: ${C.accent}55 !important; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(99,102,241,0.1) !important; }
+        .qa-btn { transition: all 0.15s ease !important; }
+        input:focus { border-color: ${C.accent} !important; box-shadow: 0 0 0 3px ${C.accentLight} !important; outline: none; }
+      `}</style>
+
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: C.text, letterSpacing: '-0.025em', margin: 0 }}>Overview</h1>
+          <p style={{ fontSize: 13, color: C.sub, marginTop: 4 }}>Welcome back — here's your parking network at a glance.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
+            <FaSearch style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: C.muted, fontSize: 13, pointerEvents: 'none' }} />
+            <input placeholder="Search stands, admins…" style={{
+              background: C.card, border: `1px solid ${C.border}`, borderRadius: 10,
+              padding: '8px 14px 8px 32px', fontSize: 13, color: C.text, width: 220,
+              fontFamily: 'Inter, sans-serif', transition: 'all 0.15s',
+            }} />
           </div>
-          <div className="relative">
-            <button className="p-2 text-gray-600 hover:text-gray-900">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM9 7H4l5-5v5z" />
-              </svg>
-            </button>
-          </div>
+          <button onClick={() => navigate('/superadmin/stands/create')} style={{
+            background: C.accent, color: '#fff', border: 'none', borderRadius: 10,
+            padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 7,
+            boxShadow: '0 2px 8px rgba(99,102,241,0.35)', fontFamily: 'Inter, sans-serif',
+          }}>
+            <FaPlus size={11} /> Add Stand
+          </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-blue-100">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Stands</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats?.totalStands || 0}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-green-100">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Stand Admins</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats?.totalStandAdmins || 0}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-yellow-100">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Staff</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats?.totalStaff || 0}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-purple-100">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Parkings</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats?.activeParkings || 0}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-red-100">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Today's Revenue</p>
-              <p className="text-2xl font-semibold text-gray-900">${stats?.todayRevenue?.toFixed(2) || '0.00'}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-indigo-100">
-              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
-              <p className="text-2xl font-semibold text-gray-900">${stats?.monthlyRevenue?.toFixed(2) || '0.00'}</p>
-            </div>
-          </div>
-        </div>
+      {/* ── KPI Cards ── */}
+      <SectionLabel>Performance Summary</SectionLabel>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 14 }}>
+        <StatCard label="Total Stands"    value={stats?.totalStands || 0} Icon={FaBuilding} iconBg={C.accentLight} iconColor={C.accent} trend={8.2}  trendLabel="2 new this month" accentBar={`linear-gradient(90deg, ${C.accent}, #818cf8)`} />
+        <StatCard label="Stand Admins"    value={stats?.totalStandAdmins || 0} Icon={MdOutlineAdminPanelSettings} iconBg={C.greenLight}  iconColor={C.green}  trend={4.1}  trendLabel="All active"         accentBar={`linear-gradient(90deg, ${C.green}, #34d399)`} />
+        <StatCard label="Total Staff"     value={stats?.totalStaff || 0} Icon={FaUsers} iconBg={C.amberLight}  iconColor={C.amber}  trend={-1.2} trendLabel="3 on leave"        accentBar={`linear-gradient(90deg, ${C.amber}, #fbbf24)`} />
+        <StatCard label="Active Parkings" value={stats?.activeParkings || 0} Icon={RiParkingBoxLine} iconBg={C.cyanLight}   iconColor={C.cyan}   trend={15.3} trendLabel="Live right now"    accentBar={`linear-gradient(90deg, ${C.cyan}, #38bdf8)`} />
+        <StatCard
+          label="Today's Revenue"
+          value={`$${stats?.todayRevenue?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}`}
+          Icon={FaMoneyBillWave} iconBg={C.tealLight} iconColor={C.teal} trend={12.4} trendLabel="vs $2,184 yesterday"
+          accentBar={`linear-gradient(90deg, ${C.teal}, #2dd4bf)`}
+        />
+        <StatCard
+          label="Monthly Revenue"
+          value={`$${(stats?.monthlyRevenue / 1000).toFixed(1)}k`}
+          Icon={FaChartLine} iconBg={C.purpleLight} iconColor={C.purple} trend={22.1} trendLabel="On record pace"
+          accentBar={`linear-gradient(90deg, ${C.purple}, #a78bfa)`}
+        />
       </div>
 
-      {/* Revenue Chart */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Monthly Revenue Trend</h2>
-        <div className="h-64 flex items-end justify-between space-x-2">
-          {(chartData || []).map((item, index) => (
-            <div key={index} className="flex flex-col items-center flex-1">
-              <div className="text-sm text-gray-600 mb-1">${item.revenue}</div>
-              <div 
-                className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg"
-                style={{ height: `${(item.revenue / Math.max(...(chartData || []).map(d => d.revenue))) * 80}%` }}
-              ></div>
-              <div className="text-xs text-gray-500 mt-1">{item.date}</div>
+      {/* ── Financial Charts ── */}
+      <SectionLabel>Financial Analytics</SectionLabel>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
+
+        {/* Revenue Area */}
+        <ChartCard title="Revenue, Profit & Expenses" subtitle="8-month financial overview" badge="All Stands">
+          <ResponsiveContainer width="100%" height={268}>
+            <AreaChart data={revenueData || []} margin={{ top: 8, right: 4, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gRev" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={C.accent} stopOpacity={0.15} />
+                  <stop offset="100%" stopColor={C.accent} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gPro" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={C.green} stopOpacity={0.15} />
+                  <stop offset="100%" stopColor={C.green} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={C.amber} stopOpacity={0.12} />
+                  <stop offset="100%" stopColor={C.amber} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="4 4" stroke={C.border} vertical={false} />
+              <XAxis dataKey="date" tick={{ fill: C.muted, fontSize: 11, fontFamily: 'Inter' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: C.muted, fontSize: 11, fontFamily: 'Inter' }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+              <Tooltip content={<CustomTooltip prefix="$" />} />
+              <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 12, color: C.sub, paddingTop: 12, fontFamily: 'Inter' }} />
+              <Area type="monotone" dataKey="revenue"  name="Revenue"  stroke={C.accent} strokeWidth={2.5} fill="url(#gRev)" dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
+              <Area type="monotone" dataKey="profit"   name="Profit"   stroke={C.green}  strokeWidth={2.5} fill="url(#gPro)" dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
+              <Area type="monotone" dataKey="expenses" name="Expenses" stroke={C.amber}  strokeWidth={2}   fill="url(#gExp)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        {/* Donut + legend */}
+        <ChartCard title="Stand Distribution" subtitle="By location type">
+          <ResponsiveContainer width="100%" height={170}>
+            <PieChart>
+              <Pie data={distributionData || []} cx="50%" cy="50%" innerRadius={50} outerRadius={74} paddingAngle={3} dataKey="value">
+                {(distributionData || []).map((e, i) => <Cell key={i} fill={e.color} strokeWidth={0} />)}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px 14px', marginTop: 8 }}>
+            {(distributionData || []).map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <span style={{ width: 9, height: 9, borderRadius: 3, background: item.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: C.sub, flex: 1 }}>{item.name}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{item.value}%</span>
+              </div>
+            ))}
+          </div>
+        </ChartCard>
+      </div>
+
+      {/* ── Operations Charts ── */}
+      <SectionLabel>Operational Insights</SectionLabel>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+
+        {/* Occupancy Bar */}
+        <ChartCard title="Weekly Occupancy Rate" subtitle="% capacity used per day" badge="This Week" badgeColor={C.tealLight} badgeText={C.teal}>
+          <ResponsiveContainer width="100%" height={228}>
+            <BarChart data={occupancyData || []} margin={{ top: 8, right: 4, left: -22, bottom: 0 }} barSize={28}>
+              <defs>
+                <linearGradient id="barG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={C.accent} />
+                  <stop offset="100%" stopColor="#818cf8" />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="4 4" stroke={C.border} vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: C.muted, fontSize: 11, fontFamily: 'Inter' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: C.muted, fontSize: 11, fontFamily: 'Inter' }} axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+              <Tooltip content={<CustomTooltip />} />
+              <ReferenceLine y={80} stroke={C.red} strokeDasharray="4 3" strokeWidth={1.5}
+                label={{ value: 'Target 80%', fill: C.red, fontSize: 10, position: 'insideTopRight', fontFamily: 'Inter' }} />
+              <Bar dataKey="value" name="Occupancy %" fill="url(#barG)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        {/* Hourly Activity */}
+        <ChartCard title="Today's Vehicle Activity" subtitle="Hourly inflow across all stands" badge="Live" badgeColor={C.greenLight} badgeText={C.green}>
+          <ResponsiveContainer width="100%" height={228}>
+            <ComposedChart data={activityData || []} margin={{ top: 8, right: 4, left: -22, bottom: 0 }}>
+              <defs>
+                <linearGradient id="actG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={C.cyan} stopOpacity={0.18} />
+                  <stop offset="100%" stopColor={C.cyan} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="4 4" stroke={C.border} vertical={false} />
+              <XAxis dataKey="hour" tick={{ fill: C.muted, fontSize: 11, fontFamily: 'Inter' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: C.muted, fontSize: 11, fontFamily: 'Inter' }} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              {/* Area fill under the line */}
+              <Area type="monotone" dataKey="vehicles" fill="url(#actG)" stroke="none" />
+              <Line type="monotone" dataKey="vehicles" name="Vehicles" stroke={C.cyan} strokeWidth={2.5}
+                dot={{ fill: C.cyan, r: 4, strokeWidth: 0 }} activeDot={{ r: 6, fill: C.cyan, strokeWidth: 0 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      {/* ── Bottom: Activity + Quick Actions ── */}
+      <SectionLabel>Activity & Actions</SectionLabel>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+        {/* Activity Feed */}
+        <ChartCard title="Recent Activity" subtitle="Latest system events">
+          {[
+            { Icon: FiCheckCircle,  iconBg: C.greenLight,  iconColor: C.green,  title: 'New stand created',       sub: 'Main Street Parking · 2 hours ago' },
+            { Icon: FiUserPlus,     iconBg: C.accentLight, iconColor: C.accent, title: 'New admin added',          sub: 'John Doe · Downtown Mall · 4 hours ago' },
+            { Icon: FiAward,        iconBg: C.amberLight,  iconColor: C.amber,  title: 'Revenue milestone hit',    sub: '$50,000 reached this month · 1 day ago' },
+            { Icon: FiActivity,     iconBg: C.cyanLight,   iconColor: C.cyan,   title: 'Peak occupancy reached',   sub: 'Airport Stand · 95% · 1 day ago' },
+            { Icon: FiAlertTriangle,iconBg: C.redLight,    iconColor: C.red,    title: 'Staff alert resolved',     sub: 'Suburban East · 2 days ago' },
+          ].map((item, i, arr) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+              padding: '11px 0',
+              borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
+            }}>
+              <div style={{ width: 35, height: 35, borderRadius: 10, background: item.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <item.Icon style={{ color: item.iconColor, fontSize: 15 }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: C.text, margin: 0 }}>{item.title}</p>
+                <p style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{item.sub}</p>
+              </div>
             </div>
           ))}
-        </div>
-      </div>
+        </ChartCard>
 
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="space-y-4">
-            <div className="flex items-start">
-              <div className="p-2 bg-green-100 rounded-full">
-                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">New stand created</p>
-                <p className="text-sm text-gray-500">Main Street Parking - 2 hours ago</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="p-2 bg-blue-100 rounded-full">
-                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">New admin added</p>
-                <p className="text-sm text-gray-500">John Doe - Downtown Mall - 4 hours ago</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="p-2 bg-purple-100 rounded-full">
-                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">Revenue milestone</p>
-                <p className="text-sm text-gray-500">$50,000 reached this month - 1 day ago</p>
-              </div>
-            </div>
+        {/* Quick Actions */}
+        <ChartCard title="Quick Actions" subtitle="Common administrative tasks">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
+            {[
+              { Icon: HiOutlineBuildingOffice2, label: 'Add Stand',    desc: 'Register a new parking stand', iconBg: C.accentLight, iconColor: C.accent },
+              { Icon: FiUserPlus,               label: 'Add Admin',    desc: 'Assign stand administrator',  iconBg: C.greenLight,  iconColor: C.green  },
+              { Icon: FiBarChart2,              label: 'View Reports', desc: 'Export financial reports',     iconBg: C.amberLight,  iconColor: C.amber  },
+              { Icon: FiSettings,               label: 'Settings',     desc: 'System configuration',        iconBg: C.purpleLight, iconColor: C.purple },
+            ].map((a, i) => (
+              <button key={i} className="qa-btn" style={{
+                background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12,
+                padding: '16px', textAlign: 'left', cursor: 'pointer', width: '100%',
+                boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
+                fontFamily: 'Inter, sans-serif',
+              }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: a.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                  <a.Icon style={{ color: a.iconColor, fontSize: 17 }} />
+                </div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: C.text, margin: '0 0 3px' }}>{a.label}</p>
+                <p style={{ fontSize: 11.5, color: C.muted, margin: 0, lineHeight: 1.4 }}>{a.desc}</p>
+              </button>
+            ))}
           </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Add Stand</p>
-                </div>
-              </div>
-            </button>
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Add Admin</p>
-                </div>
-              </div>
-            </button>
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-              <div className="flex items-center">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">View Reports</p>
-                </div>
-              </div>
-            </button>
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Settings</p>
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
+        </ChartCard>
       </div>
     </div>
   );

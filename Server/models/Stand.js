@@ -23,6 +23,12 @@ const standSchema = new mongoose.Schema({
     required: [true, 'Hourly rate is required'],
     min: [0, 'Hourly rate cannot be negative']
   },
+  currency: {
+    type: String,
+    required: [true, 'Currency is required'],
+    enum: ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'SGD'],
+    default: 'USD'
+  },
   currentOccupancy: {
     type: Number,
     default: 0,

@@ -24,6 +24,26 @@ export const createStaff = async (data) => {
   return response.data;
 };
 
+export const updateStaff = async (id, data) => {
+  const response = await api.put(`/staff/${id}`, data);
+  return response.data;
+};
+
+export const deleteStaff = async (id) => {
+  const response = await api.delete(`/staff/${id}`);
+  return response.data;
+};
+
+export const getStaffStats = async () => {
+  const response = await api.get('/staff/stats');
+  return response.data.data;
+};
+
+export const getStaffMember = async (id) => {
+  const response = await api.get(`/staff/${id}`);
+  return response.data.data;
+};
+
 export const getParkings = async () => {
   const response = await api.get('/parkings');
   return response.data.data || response.data; // Handle both response formats

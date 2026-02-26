@@ -16,6 +16,10 @@ const createStandValidation = Joi.object({
     'number.min': 'Hourly rate cannot be negative',
     'any.required': 'Hourly rate is required'
   }),
+  currency: Joi.string().valid('USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'SGD').required().messages({
+    'any.required': 'Currency is required',
+    'any.only': 'Invalid currency selected'
+  }),
   description: Joi.string().trim().optional(),
   contactNumber: Joi.string().optional(),
   adminName: Joi.string().optional(),
@@ -33,6 +37,9 @@ const updateStandValidation = Joi.object({
   }),
   hourlyRate: Joi.number().min(0).optional().messages({
     'number.min': 'Hourly rate cannot be negative'
+  }),
+  currency: Joi.string().valid('USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'SGD').optional().messages({
+    'any.only': 'Invalid currency selected'
   }),
   status: Joi.string().valid('active', 'inactive', 'maintenance').optional(),
   description: Joi.string().trim().optional()

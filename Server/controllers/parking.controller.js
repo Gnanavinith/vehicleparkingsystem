@@ -74,6 +74,58 @@ const createParking = async (req, res, next) => {
   }
 };
 
+// @desc    Checkout vehicle by ID
+// @route   POST /api/parking/:id/checkout
+// @access  Private (Staff only)
+const checkoutParkingById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    
+    const parking = await Parking.findOne({
+      _id: id,
+      status: 'active',
+      stand: req.user.stand
+    });
+    
+    if (!parking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Active parking entry not found'
+      });
+    }
+
+    // Set checkout time
+    parking.outTime = new Date();
+    parking.status = 'completed';
+    
+    // Calculate amount
+    const stand = await Stand.findById(req.user.stand);
+    parking.amount = calculateAmount(
+      parking.inTime, 
+      parking.outTime, 
+      parking.vehicleType, 
+      stand.hourlyRate
+    );
+    
+    await parking.save();
+
+    // Update stand occupancy
+    const standDoc = await Stand.findById(req.user.stand);
+    if (standDoc.currentOccupancy > 0) {
+      standDoc.currentOccupancy -= 1;
+      await standDoc.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Vehicle checked out successfully',
+      data: parking
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Checkout vehicle
 // @route   POST /api/parking/out
 // @access  Private (Staff only)
@@ -222,10 +274,44 @@ const getParkingByToken = async (req, res, next) => {
   }
 };
 
+// @desc    Search parking by vehicle number
+// @route   GET /api/parking/search
+// @access  Private (Staff only)
+const searchParkingByVehicleNumber = async (req, res, next) => {
+  try {
+    const { vehicleNumber } = req.query;
+    
+    if (!vehicleNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vehicle number is required'
+      });
+    }
+
+    const parkings = await Parking.find({
+      vehicleNumber: { $regex: vehicleNumber, $options: 'i' },
+      stand: req.user.stand,
+      status: 'active'
+    })
+    .populate('staff', 'name')
+    .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: parkings.length,
+      data: parkings
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createParking,
   checkoutParking,
+  checkoutParkingById,
   getTodayParking,
   getActiveParkings,
-  getParkingByToken
+  getParkingByToken,
+  searchParkingByVehicleNumber
 };

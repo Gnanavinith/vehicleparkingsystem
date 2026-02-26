@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "react-is": "^19.2.4",
+    "recharts": "^3.7.0"
+  }
+}

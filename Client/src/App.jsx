@@ -19,6 +19,7 @@ import StaffLogin from './features/auth/pages/StaffLogin';
 import SuperAdminDashboard from './features/superadmin/pages/Dashboard';
 import VehicleStands from './features/superadmin/pages/VehicleStands';
 import CreateStand from './features/superadmin/pages/CreateStand';
+import EditStand from './features/superadmin/pages/EditStand'; // Import the new EditStand component
 import StandAdmins from './features/superadmin/pages/StandAdmins';
 import Reports from './features/superadmin/pages/Reports';
 import Pricing from './features/superadmin/pages/Pricing';
@@ -28,6 +29,7 @@ import Settings from './features/superadmin/pages/Settings';
 import StandAdminDashboard from './features/standadmin/pages/Dashboard';
 import Staff from './features/standadmin/pages/Staff';
 import CreateStaff from './features/standadmin/pages/CreateStaff';
+import EditStaff from './features/standadmin/pages/EditStaff';
 import Parkings from './features/standadmin/pages/Parkings';
 import StandAdminReports from './features/standadmin/pages/Reports';
 import PricingSettings from './features/standadmin/pages/PricingSettings';
@@ -63,7 +65,7 @@ function App() {
               <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
               <Route path="/superadmin/stands" element={<VehicleStands />} />
               <Route path="/superadmin/stands/create" element={<CreateStand />} />
-              <Route path="/superadmin/admins" element={<StandAdmins />} />
+              <Route path="/superadmin/stands/edit/:id" element={<EditStand />} /> {/* Add the EditStand route */}
               <Route path="/superadmin/reports" element={<Reports />} />
               <Route path="/superadmin/pricing" element={<Pricing />} />
               <Route path="/superadmin/settings" element={<Settings />} />
@@ -80,6 +82,7 @@ function App() {
               <Route path="/standadmin/dashboard" element={<StandAdminDashboard />} />
               <Route path="/standadmin/staff" element={<Staff />} />
               <Route path="/standadmin/create-staff" element={<CreateStaff />} />
+              <Route path="/standadmin/staff/edit/:id" element={<EditStaff />} />
               <Route path="/standadmin/parkings" element={<Parkings />} />
               <Route path="/standadmin/reports" element={<StandAdminReports />} />
               <Route path="/standadmin/pricing" element={<PricingSettings />} />

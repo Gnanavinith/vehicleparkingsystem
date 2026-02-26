@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Stand = require('../models/Stand');
+const bcrypt = require('bcryptjs');
 
 // @desc    Get all staff members
 // @route   GET /api/staff
@@ -48,7 +49,7 @@ const getStaffMember = async (req, res, next) => {
     if (req.user.role === 'stand_admin' && 
         req.user.stand && 
         staff.stand && 
-        staff.stand.toString() !== req.user.stand.toString()) {
+        staff.stand._id.toString() !== req.user.stand.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Access denied to this staff member'
@@ -133,7 +134,7 @@ const updateStaff = async (req, res, next) => {
     if (req.user.role === 'stand_admin' && 
         req.user.stand && 
         staff.stand && 
-        staff.stand.toString() !== req.user.stand.toString()) {
+        staff.stand._id.toString() !== req.user.stand.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Access denied to this staff member'
@@ -148,10 +149,21 @@ const updateStaff = async (req, res, next) => {
       });
     }
 
+    // Handle password update
+    let updateData = { ...req.body };
+    if (updateData.password) {
+      // If password is provided, hash it
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(updateData.password, salt);
+    } else {
+      // If no password provided, remove it from update data to keep existing password
+      delete updateData.password;
+    }
+
     // Update staff member
     staff = await User.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       {
         new: true,
         runValidators: true,

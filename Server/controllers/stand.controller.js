@@ -59,7 +59,7 @@ const createStand = async (req, res, next) => {
       });
     }
 
-    const { name, location, capacity, hourlyRate, description, contactNumber, adminName, adminEmail, adminPassword } = req.body;
+    const { name, location, capacity, hourlyRate, currency, description, contactNumber, adminName, adminEmail, adminPassword } = req.body;
 
     // Check if stand already exists
     const standExists = await Stand.findOne({ name });
@@ -85,6 +85,7 @@ const createStand = async (req, res, next) => {
       location,
       capacity,
       hourlyRate,
+      currency,
       description
     });
 
@@ -125,15 +126,9 @@ const createStand = async (req, res, next) => {
 // @access  Private (Super Admin only)
 const updateStand = async (req, res, next) => {
   try {
-    // Validate request body
-    const { error } = updateStandValidation.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.details[0].message
-      });
-    }
+    const { name, location, capacity, hourlyRate, currency, description, contactNumber, adminName, adminEmail, adminPassword } = req.body;
 
+    // Check if stand exists
     let stand = await Stand.findById(req.params.id);
     if (!stand) {
       return res.status(404).json({
@@ -142,20 +137,59 @@ const updateStand = async (req, res, next) => {
       });
     }
 
-    // Update stand
-    stand = await Stand.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true
+    // Update stand details if provided
+    if (name || location || capacity || hourlyRate || currency || description || contactNumber) {
+      const updateData = {};
+      if (name) updateData.name = name;
+      if (location) updateData.location = location;
+      if (capacity) updateData.capacity = capacity;
+      if (hourlyRate) updateData.hourlyRate = hourlyRate;
+      if (currency) updateData.currency = currency;
+      if (description) updateData.description = description;
+      if (contactNumber) updateData.contactNumber = contactNumber;
+
+      stand = await Stand.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        {
+          new: true,
+          runValidators: true
+        }
+      );
+    }
+
+    // Update admin details if provided
+    if (adminName || adminEmail || adminPassword) {
+      if (stand.admin) {
+        const adminUpdateData = {};
+        if (adminName) adminUpdateData.name = adminName;
+        if (adminEmail) adminUpdateData.email = adminEmail;
+        if (adminPassword) adminUpdateData.password = adminPassword;
+
+        await User.findByIdAndUpdate(
+          stand.admin,
+          adminUpdateData,
+          {
+            new: true,
+            runValidators: true
+          }
+        );
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot update admin details for a stand without an assigned admin'
+        });
       }
-    );
+    }
+
+    // Repopulate the stand with updated admin data
+    const updatedStand = await Stand.findById(req.params.id)
+      .populate('admin', 'name email');
 
     res.status(200).json({
       success: true,
       message: 'Stand updated successfully',
-      data: stand
+      data: updatedStand
     });
   } catch (error) {
     next(error);

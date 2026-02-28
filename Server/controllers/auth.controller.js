@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Stand = require('../models/Stand');
 const { generateToken } = require('../services/token.service');
 const { loginValidation, registerValidation, forgotPasswordValidation, resetPasswordValidation } = require('../validations/auth.validation');
 
@@ -38,7 +39,11 @@ const register = async (req, res, next) => {
     });
 
     // Generate token
-    const token = generateToken({ id: user._id });
+    const token = generateToken({ 
+      id: user._id,
+      role: user.role,
+      stand: user.stand
+    });
 
     res.status(201).json({
       success: true,
@@ -106,7 +111,11 @@ const login = async (req, res, next) => {
     await user.save();
 
     // Generate token
-    const token = generateToken({ id: user._id });
+    const token = generateToken({ 
+      id: user._id,
+      role: user.role,
+      stand: user.stand
+    });
 
     res.status(200).json({
       success: true,
@@ -271,7 +280,11 @@ const loginSuperAdmin = async (req, res, next) => {
     await user.save();
 
     // Generate token
-    const token = generateToken({ id: user._id });
+    const token = generateToken({ 
+      id: user._id,
+      role: user.role,
+      stand: user.stand
+    });
 
     res.status(200).json({
       success: true,
@@ -293,11 +306,37 @@ const loginSuperAdmin = async (req, res, next) => {
   }
 };
 
+// @desc    Get user profile with stand information
+// @route   GET /api/auth/profile
+// @access  Private
+const getProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .populate('stand', 'name location pricing currency')
+      .select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   loginSuperAdmin,
   getMe,
+  getProfile,
   forgotPassword,
   resetPassword
 };

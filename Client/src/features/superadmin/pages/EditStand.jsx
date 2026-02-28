@@ -7,210 +7,259 @@ import { FiArrowLeft, FiSave, FiTrash2, FiEye, FiEyeOff, FiAlertTriangle } from 
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2';
 import { MdOutlineAdminPanelSettings, MdOutlineLocationOn, MdOutlinePhone } from 'react-icons/md';
 import { RiParkingBoxLine } from 'react-icons/ri';
-import { BsCurrencyDollar, BsPersonFill } from 'react-icons/bs';
-import { FaMoneyBillWave } from 'react-icons/fa';
-import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { BsPersonFill } from 'react-icons/bs';
+import { FaMoneyBillWave, FaEnvelope, FaLock } from 'react-icons/fa';
 
-// Currency symbol mapping
+// ─── Currency ──────────────────────────────────────────────────────────────────
 const CURRENCY_SYMBOLS = {
-  'USD': '$',
-  'EUR': '€',
-  'GBP': '£',
-  'INR': '₹',
-  'JPY': '¥',
-  'CAD': 'C$',
-  'AUD': 'A$',
-  'CHF': 'CHF',
-  'CNY': '¥',
-  'SGD': 'S$'
+  USD: '$', EUR: '€', GBP: '£', INR: '₹', JPY: '¥',
+  CAD: 'C$', AUD: 'A$', CHF: 'CHF', CNY: '¥', SGD: 'S$',
 };
 
-// ─── Tokens ────────────────────────────────────────────────────────────────────
-const C = {
-  bg:          '#f1f5f9',
-  card:        '#ffffff',
-  border:      '#e2e8f0',
-  borderFocus: '#6366f1',
-  text:        '#0f172a',
-  sub:         '#475569',
-  muted:       '#94a3b8',
-  accent:      '#6366f1',
-  accentLight: '#eef2ff',
-  green:       '#10b981',
-  greenLight:  '#d1fae5',
-  red:         '#ef4444',
-  redLight:    '#fee2e2',
-  amber:       '#f59e0b',
-  amberLight:  '#fef3c7',
-};
+// ─── Global CSS ────────────────────────────────────────────────────────────────
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-// ─── Field Component ───────────────────────────────────────────────────────────
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes spin   { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .es-wrap { font-family: 'DM Sans', sans-serif; animation: fadeUp .28s ease; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; font-weight: 600;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: #aaa; display: block; margin-bottom: 6px;
+  }
+
+  .db-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #ebebeb;
+    transition: box-shadow .18s;
+  }
+
+  /* ── Form inputs ── */
+  .es-input, .es-select, .es-textarea {
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #0a0a0a;
+    background: #fff;
+    border: 1.5px solid #ebebeb;
+    border-radius: 10px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color .14s, box-shadow .14s;
+  }
+  .es-input:focus, .es-select:focus, .es-textarea:focus {
+    border-color: #0a0a0a;
+    box-shadow: 0 0 0 3px rgba(10,10,10,0.06);
+  }
+  .es-input.error, .es-select.error { border-color: #dc2626; }
+  .es-input.error:focus { box-shadow: 0 0 0 3px #fee2e2; }
+  .es-input.has-icon { padding-left: 34px; }
+  .es-select { appearance: none; }
+  .es-textarea { resize: vertical; line-height: 1.55; }
+  .es-input::placeholder, .es-textarea::placeholder { color: #ccc; }
+
+  .field-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: .06em; text-transform: uppercase;
+    color: #888; margin-bottom: 5px; display: flex; align-items: center; gap: 4px;
+  }
+  .field-error {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: #dc2626;
+    display: flex; align-items: center; gap: 4px; margin-top: 4px;
+  }
+  .field-hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: #bbb; margin-top: 4px;
+  }
+
+  /* ── Back button ── */
+  .back-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: #fff; border: 1.5px solid #ebebeb;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .14s; flex-shrink: 0;
+  }
+  .back-btn:hover { border-color: #0a0a0a; background: #fafafa; }
+
+  /* ── Action buttons ── */
+  .save-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px; background: #0a0a0a; color: #fff;
+    border: none; border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all .14s;
+  }
+  .save-btn:hover:not(:disabled) { background: #222; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+  .save-btn:disabled { background: #d4d4d4; cursor: not-allowed; }
+
+  .cancel-btn {
+    padding: 10px 18px; background: transparent;
+    border: 1.5px solid #ebebeb; border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    color: #888; cursor: pointer; transition: all .14s;
+  }
+  .cancel-btn:hover { border-color: #0a0a0a; color: #0a0a0a; }
+
+  .delete-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 18px; background: #fef2f2; color: #dc2626;
+    border: 1.5px solid #fecaca; border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .14s;
+  }
+  .delete-btn:hover:not(:disabled) { background: #fecaca; border-color: #dc2626; }
+  .delete-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+  .delete-confirm-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; background: #dc2626; color: #fff;
+    border: none; border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all .14s;
+  }
+  .delete-confirm-btn:hover:not(:disabled) { background: #b91c1c; }
+  .delete-confirm-btn:disabled { background: #d4d4d4; cursor: not-allowed; }
+
+  /* ── Info box ── */
+  .info-box {
+    background: #f7f7f7; border: 1.5px solid #ebebeb;
+    border-radius: 10px; padding: 12px 14px;
+  }
+`;
+
+// ─── Spinner ───────────────────────────────────────────────────────────────────
+const Spinner = ({ color = '#fff', size = 14 }) => (
+  <div style={{
+    width: size, height: size,
+    border: `2px solid ${color}33`, borderTopColor: color,
+    borderRadius: '50%', animation: 'spin .6s linear infinite', flexShrink: 0,
+  }} />
+);
+
+// ─── Field wrapper ────────────────────────────────────────────────────────────
 const Field = ({ label, required, error, hint, children }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-    <label style={{ fontSize: 12.5, fontWeight: 600, color: C.sub, display: 'flex', alignItems: 'center', gap: 4 }}>
+  <div style={{ display: 'flex', flexDirection: 'column' }}>
+    <div className="field-label">
       {label}
-      {required && <span style={{ color: C.red, fontSize: 13 }}>*</span>}
-    </label>
+      {required && <span style={{ color: '#dc2626', fontSize: 11 }}>*</span>}
+    </div>
     {children}
-    {error && (
-      <p style={{ fontSize: 11.5, color: C.red, display: 'flex', alignItems: 'center', gap: 4, margin: 0 }}>
-        <FiAlertTriangle size={11} /> {error}
-      </p>
-    )}
-    {hint && !error && <p style={{ fontSize: 11.5, color: C.muted, margin: 0 }}>{hint}</p>}
+    {error && <div className="field-error"><FiAlertTriangle size={10} />{error}</div>}
+    {hint && !error && <div className="field-hint">{hint}</div>}
   </div>
 );
 
-// ─── Input Component ───────────────────────────────────────────────────────────
-const Input = ({ icon: Icon, error, suffix, style = {}, ...props }) => (
+// ─── Input with optional icon ─────────────────────────────────────────────────
+const Input = ({ icon: Icon, error, ...props }) => (
   <div style={{ position: 'relative' }}>
     {Icon && (
       <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1 }}>
-        <Icon style={{ color: error ? C.red : C.muted, fontSize: 14 }} />
+        <Icon style={{ color: error ? '#dc2626' : '#ccc', fontSize: 13 }} />
       </div>
     )}
-    <input
-      {...props}
-      style={{
-        width: '100%', fontFamily: 'Inter, sans-serif',
-        padding: `9px 12px 9px ${Icon ? '34px' : '12px'}`,
-        paddingRight: suffix ? 44 : 12,
-        border: `1.5px solid ${error ? C.red : C.border}`,
-        borderRadius: 9, fontSize: 13.5, color: C.text,
-        background: C.card, outline: 'none',
-        transition: 'border-color 0.15s, box-shadow 0.15s',
-        ...style,
-      }}
-      onFocus={e => {
-        e.target.style.borderColor = error ? C.red : C.borderFocus;
-        e.target.style.boxShadow = `0 0 0 3px ${error ? '#fee2e2' : C.accentLight}`;
-      }}
-      onBlur={e => {
-        e.target.style.borderColor = error ? C.red : C.border;
-        e.target.style.boxShadow = 'none';
-      }}
-    />
-    {suffix}
+    <input className={`es-input${Icon ? ' has-icon' : ''}${error ? ' error' : ''}`} {...props} />
   </div>
 );
 
-// ─── Textarea Component ────────────────────────────────────────────────────────
-const Textarea = ({ error, ...props }) => (
-  <textarea
-    {...props}
-    style={{
-      width: '100%', fontFamily: 'Inter, sans-serif',
-      padding: '9px 12px', border: `1.5px solid ${error ? C.red : C.border}`,
-      borderRadius: 9, fontSize: 13.5, color: C.text, background: C.card,
-      outline: 'none', resize: 'vertical', lineHeight: 1.5,
-      transition: 'border-color 0.15s, box-shadow 0.15s',
-    }}
-    onFocus={e => { e.target.style.borderColor = C.borderFocus; e.target.style.boxShadow = `0 0 0 3px ${C.accentLight}`; }}
-    onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = 'none'; }}
-  />
-);
-
-//─── Select Component──────────────────────────────────────────────────────────
-const Select = ({ icon: Icon, error, children, style = {}, ...props }) => (
+// ─── Select with optional icon ────────────────────────────────────────────────
+const Select = ({ icon: Icon, error, children, ...props }) => (
   <div style={{ position: 'relative' }}>
     {Icon && (
       <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1 }}>
-        <Icon style={{ color: error ? C.red : C.muted, fontSize: 14 }} />
+        <Icon style={{ color: '#ccc', fontSize: 13 }} />
       </div>
     )}
-    <select
-      {...props}
-      style={{
-        width: '100%', fontFamily: 'Inter, sans-serif',
-        padding: `9px 12px 9px ${Icon ? '34px' : '12px'}`,
-        border: `1.5px solid ${error ? C.red : C.border}`,
-        borderRadius: 9, fontSize: 13.5, color: C.text,
-        background: C.card, outline: 'none',
-        appearance: 'none',
-        transition: 'border-color 0.15s, box-shadow 0.15s',
-        ...style,
-      }}
-      onFocus={e => {
-        e.target.style.borderColor = error ? C.red : C.borderFocus;
-        e.target.style.boxShadow = `0 0 0 3px ${error ? '#fee2e2' : C.accentLight}`;
-      }}
-      onBlur={e => {
-        e.target.style.borderColor = error ? C.red : C.border;
-        e.target.style.boxShadow = 'none';
-      }}
-    >
+    <select className={`es-select${error ? ' error' : ''}`} style={{ paddingLeft: Icon ? 34 : 12 }} {...props}>
       {children}
     </select>
-    <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: C.muted }}>
-      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    {/* chevron */}
+    <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#ccc' }}>
+      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
         <path d="m6 9 6 6 6-6" />
       </svg>
     </div>
   </div>
 );
 
-// ─── Section Card ──────────────────────────────────────────────────────────────
+// ─── Section Card ─────────────────────────────────────────────────────────────
 const SectionCard = ({ title, subtitle, Icon, iconBg, iconColor, children }) => (
-  <div style={{
-    background: C.card, border: `1px solid ${C.border}`, borderRadius: 14,
-    boxShadow: '0 1px 3px rgba(15,23,42,0.06)', overflow: 'hidden',
-  }}>
+  <div className="db-card" style={{ overflow: 'hidden' }}>
+    {/* card header */}
     <div style={{
-      padding: '18px 22px', borderBottom: `1px solid ${C.border}`,
+      padding: '16px 20px', borderBottom: '1px solid #f5f5f5',
       display: 'flex', alignItems: 'center', gap: 12,
-      background: 'linear-gradient(135deg, #fafbff 0%, #f8fafc 100%)',
     }}>
-      <div style={{ width: 38, height: 38, borderRadius: 10, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Icon style={{ color: iconColor, fontSize: 17 }} />
+      <div style={{ width: 34, height: 34, borderRadius: 9, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon style={{ color: iconColor, fontSize: 15 }} />
       </div>
       <div>
-        <p style={{ fontSize: 14, fontWeight: 700, color: C.text, margin: 0 }}>{title}</p>
-        {subtitle && <p style={{ fontSize: 12, color: C.muted, margin: 0, marginTop: 2 }}>{subtitle}</p>}
+        <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: 16, fontStyle: 'italic', color: '#0a0a0a' }}>{title}</div>
+        {subtitle && <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#aaa', marginTop: 2, letterSpacing: '.03em' }}>{subtitle}</div>}
       </div>
     </div>
-    <div style={{ padding: '22px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+    {/* card body */}
+    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
       {children}
     </div>
   </div>
 );
 
-// ─── Delete Confirm Modal ──────────────────────────────────────────────────────
+// ─── Delete Modal ─────────────────────────────────────────────────────────────
 const DeleteModal = ({ name, onConfirm, onCancel, isPending }) => (
-  <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
-    <div style={{ background: C.card, borderRadius: 16, padding: '28px', width: 420, boxShadow: '0 24px 48px rgba(15,23,42,0.18)', border: `1px solid ${C.border}` }}>
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 22 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: C.redLight, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <FiAlertTriangle style={{ color: C.red, fontSize: 21 }} />
+  <div style={{
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    zIndex: 1000, animation: 'fadeIn .15s ease',
+  }}>
+    <div className="db-card" style={{ padding: '32px', maxWidth: 400, width: '90%' }}>
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{
+          width: 48, height: 48, borderRadius: '50%', background: '#fef2f2',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+        }}>
+          <FiAlertTriangle size={20} color="#dc2626" />
         </div>
-        <div>
-          <p style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Delete Stand</p>
-          <p style={{ fontSize: 13, color: C.sub, marginTop: 5, lineHeight: 1.55 }}>
-            Are you sure you want to permanently delete <strong>"{name}"</strong>? All associated data will be lost and this cannot be undone.
-          </p>
+        <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: 20, fontStyle: 'italic', color: '#0a0a0a', marginBottom: 8 }}>
+          Delete Stand
+        </div>
+        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#888', lineHeight: 1.7 }}>
+          Are you sure you want to permanently delete{' '}
+          <span style={{ color: '#0a0a0a', fontWeight: 600 }}>{name}</span>?
+          <br />All associated data will be lost and this cannot be undone.
         </div>
       </div>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        <button onClick={onCancel} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 9, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: C.sub, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Cancel</button>
-        <button onClick={onConfirm} disabled={isPending} style={{ background: C.red, border: 'none', borderRadius: 9, padding: '8px 20px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: isPending ? 'not-allowed' : 'pointer', opacity: isPending ? 0.7 : 1, fontFamily: 'Inter, sans-serif' }}>
-          {isPending ? 'Deleting…' : 'Delete Stand'}
+        <button className="cancel-btn" onClick={onCancel}>Cancel</button>
+        <button className="delete-confirm-btn" onClick={onConfirm} disabled={isPending}>
+          {isPending ? <><Spinner /> Deleting…</> : <><FiTrash2 size={11} /> Delete Stand</>}
         </button>
       </div>
     </div>
   </div>
 );
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 const EditStand = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { id }       = useParams();
+  const navigate     = useNavigate();
+  const queryClient  = useQueryClient();
 
   const [formData, setFormData] = useState({
-    name: '', location: '', capacity: '', hourlyRate: '',
-    currency: 'USD', description: '', contactNumber: '',
+    name: '', location: '', capacity: '',
+    pricing: { cycle: 5, bike: 10, car: 20 },
+    currency: 'INR', description: '', contactNumber: '',
     adminName: '', adminEmail: '', adminPassword: '',
   });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors]           = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -223,327 +272,342 @@ const EditStand = () => {
   useEffect(() => {
     if (standData) {
       setFormData({
-        name: standData.name || '',
-        location: standData.location || '',
-        capacity: standData.capacity || '',
-        hourlyRate: standData.hourlyRate || '',
-        currency: standData.currency || 'USD',
-        description: standData.description || '',
+        name:          standData.name          || '',
+        location:      standData.location      || '',
+        capacity:      standData.capacity      || '',
+        pricing:       standData.pricing       || { cycle: 5, bike: 10, car: 20 },
+        currency:      standData.currency      || 'INR',
+        description:   standData.description   || '',
         contactNumber: standData.contactNumber || '',
-        adminName: standData.admin?.name || '',
-        adminEmail: standData.admin?.email || '',
+        adminName:     standData.admin?.name   || '',
+        adminEmail:    standData.admin?.email  || '',
         adminPassword: '',
       });
     }
   }, [standData]);
 
-  const updateStandMutation = useMutation({
+  const updateMutation = useMutation({
     mutationFn: async (data) => { const r = await api.put(`/stands/${id}`, data); return r.data; },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['superadmin-stands']);
-      queryClient.invalidateQueries(['stand', id]);
-      navigate('/superadmin/stands');
-    },
-    onError: (err) => { if (err.response?.data?.message) alert(`Error: ${err.response.data.message}`); },
+    onSuccess:  () => { queryClient.invalidateQueries(['superadmin-stands']); queryClient.invalidateQueries(['stand', id]); navigate('/superadmin/stands'); },
+    onError:    (err) => { if (err.response?.data?.message) alert(`Error: ${err.response.data.message}`); },
   });
 
-  const deleteStandMutation = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: async () => { const r = await api.delete(`/stands/${id}`); return r.data; },
-    onSuccess: () => { queryClient.invalidateQueries(['superadmin-stands']); navigate('/superadmin/stands'); },
-    onError: (err) => { if (err.response?.data?.message) alert(`Error: ${err.response.data.message}`); },
+    onSuccess:  () => { queryClient.invalidateQueries(['superadmin-stands']); navigate('/superadmin/stands'); },
+    onError:    (err) => { if (err.response?.data?.message) alert(`Error: ${err.response.data.message}`); },
   });
 
-  const handleChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = e => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleSubmit = e => {
     e.preventDefault();
     const errs = {};
-    if (!formData.name.trim()) errs.name = 'Name is required';
-    if (!formData.location.trim()) errs.location = 'Location is required';
-    if (!formData.capacity || formData.capacity <= 0) errs.capacity = 'Must be greater than 0';
-    if (formData.hourlyRate === '' || formData.hourlyRate < 0) errs.hourlyRate = 'Must be 0 or greater';
-    if (!formData.currency) errs.currency = 'Currency is required';
-    if (!formData.adminName.trim()) errs.adminName = 'Admin name is required';
-    if (!formData.adminEmail.trim()) errs.adminEmail = 'Admin email is required';
+    if (!formData.name.trim())                         errs.name       = 'Name is required';
+    if (!formData.location.trim())                     errs.location   = 'Location is required';
+    if (!formData.capacity || formData.capacity <= 0)  errs.capacity   = 'Must be greater than 0';
+    if (!formData.pricing.cycle || formData.pricing.cycle < 0) errs.cycleRate = 'Must be 0 or greater';
+    if (!formData.pricing.bike || formData.pricing.bike < 0) errs.bikeRate = 'Must be 0 or greater';
+    if (!formData.pricing.car || formData.pricing.car < 0) errs.carRate = 'Must be 0 or greater';
+    if (!formData.currency)                            errs.currency   = 'Currency is required';
+    if (!formData.adminName.trim())                    errs.adminName  = 'Admin name is required';
+    if (!formData.adminEmail.trim())                   errs.adminEmail = 'Admin email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.adminEmail)) errs.adminEmail = 'Invalid email address';
     setErrors(errs);
-    if (!Object.keys(errs).length) updateStandMutation.mutate(formData);
+    if (!Object.keys(errs).length) updateMutation.mutate(formData);
   };
 
+  // ── Loading ──
   if (isLoading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
-      <div style={{ width: 36, height: 36, border: `3px solid ${C.accentLight}`, borderTopColor: C.accent, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+    <>
+      <style>{css}</style>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
+        <Spinner color="#0a0a0a" size={32} />
+      </div>
+    </>
   );
 
+  // ── Error ──
   if (error) return (
-    <div style={{ background: C.redLight, border: `1px solid #fca5a5`, borderRadius: 12, padding: '14px 18px', color: C.red, fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
-      <strong>Error:</strong> {error.message}
-    </div>
+    <>
+      <style>{css}</style>
+      <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 12, padding: '14px 18px', color: '#dc2626', fontSize: 13, fontFamily: 'DM Mono, monospace' }}>
+        <strong>Error:</strong> {error.message}
+      </div>
+    </>
   );
+
+  const sym = CURRENCY_SYMBOLS[formData.currency] || '₹';
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', padding: '28px 32px', fontFamily: 'Inter, sans-serif' }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        * { box-sizing: border-box; }
-      `}</style>
+    <>
+      <style>{css}</style>
+      <div className="es-wrap" style={{ padding: '28px 32px', minHeight: '100vh', background: '#f7f7f7' }}>
 
-      {showDeleteModal && (
-        <DeleteModal
-          name={formData.name}
-          onConfirm={() => deleteStandMutation.mutate()}
-          onCancel={() => setShowDeleteModal(false)}
-          isPending={deleteStandMutation.isPending}
-        />
-      )}
+        {showDeleteModal && (
+          <DeleteModal
+            name={formData.name}
+            onConfirm={() => deleteMutation.mutate()}
+            onCancel={() => setShowDeleteModal(false)}
+            isPending={deleteMutation.isPending}
+          />
+        )}
 
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button
-            onClick={() => navigate('/superadmin/stands')}
-            style={{
-              width: 36, height: 36, borderRadius: 9, background: C.card,
-              border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = C.accentLight}
-            onMouseLeave={e => e.currentTarget.style.background = C.card}
-          >
-            <FiArrowLeft style={{ color: C.sub, fontSize: 16 }} />
-          </button>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: C.text, letterSpacing: '-0.025em', margin: 0 }}>Edit Stand</h1>
-            <p style={{ fontSize: 13, color: C.sub, marginTop: 3 }}>
-              {formData.name ? `Editing "${formData.name}"` : 'Update stand details and admin information'}
-            </p>
+        {/* ── Header ── */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <button className="back-btn" onClick={() => navigate('/superadmin/stands')}>
+              <FiArrowLeft size={15} color="#555" />
+            </button>
+            <div>
+              <span className="section-label">Network / Stands</span>
+              <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: 28, letterSpacing: '-0.02em', color: '#0a0a0a', lineHeight: 1, fontStyle: 'italic' }}>
+                Edit Stand
+              </div>
+              <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#aaa', marginTop: 4, letterSpacing: '.04em' }}>
+                {formData.name ? `Editing "${formData.name}"` : 'Update stand details and admin information'}
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Status badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Status badge */}
           {standData && (
             <span style={{
-              fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 20,
-              background: standData.isActive ? C.greenLight : C.redLight,
-              color: standData.isActive ? C.green : C.red,
-              display: 'flex', alignItems: 'center', gap: 5,
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontFamily: 'DM Mono, monospace', fontSize: 10, fontWeight: 700,
+              letterSpacing: '.08em', textTransform: 'uppercase',
+              background: standData.isActive ? '#f0fdf4' : '#f5f5f5',
+              color: standData.isActive ? '#059669' : '#aaa',
+              padding: '5px 12px', borderRadius: 20,
             }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: standData.isActive ? C.green : C.red }} />
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: standData.isActive ? '#22c55e' : '#d1d5db' }} />
               {standData.isActive ? 'Active' : 'Inactive'}
             </span>
           )}
         </div>
-      </div>
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
 
-          {/* ── Stand Information ── */}
-          <SectionCard title="Stand Information" subtitle="Basic details about this parking location" Icon={HiOutlineBuildingOffice2} iconBg={C.accentLight} iconColor={C.accent}>
-            <Field label="Stand Name" required error={errors.name}>
-              <Input icon={RiParkingBoxLine} name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Main Street Parking" error={errors.name} />
-            </Field>
-            <Field label="Location" required error={errors.location}>
-              <Input icon={MdOutlineLocationOn} name="location" value={formData.location} onChange={handleChange} placeholder="e.g. 123 Main St, Downtown" error={errors.location} />
-            </Field>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <Field label="Capacity" required error={errors.capacity}>
-                <Input
-                  icon={RiParkingBoxLine}
-                  name="capacity" type="number" min="1"
-                  value={formData.capacity} onChange={handleChange}
-                  placeholder="e.g. 100" error={errors.capacity}
-                />
+            {/* ── Stand Information ── */}
+            <SectionCard
+              title="Stand Information"
+              subtitle="Basic details about this parking location"
+              Icon={HiOutlineBuildingOffice2}
+              iconBg="#eff6ff"
+              iconColor="#1d4ed8"
+            >
+              <Field label="Stand Name" required error={errors.name}>
+                <Input icon={RiParkingBoxLine} name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Main Street Parking" error={errors.name} />
               </Field>
-              <Field label="Currency" required error={errors.currency}>
-                <Select
-                  icon={FaMoneyBillWave}
-                  name="currency"
-                  value={formData.currency} onChange={handleChange}
-                  error={errors.currency}
-                >
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                  <option value="INR">INR - Indian Rupee</option>
-                  <option value="JPY">JPY - Japanese Yen</option>
-                  <option value="CAD">CAD - Canadian Dollar</option>
-                  <option value="AUD">AUD - Australian Dollar</option>
-                  <option value="CHF">CHF - Swiss Franc</option>
-                  <option value="CNY">CNY - Chinese Yuan</option>
-                  <option value="SGD">SGD - Singapore Dollar</option>
-                </Select>
+
+              <Field label="Location" required error={errors.location}>
+                <Input icon={MdOutlineLocationOn} name="location" value={formData.location} onChange={handleChange} placeholder="e.g. 123 Main St, Downtown" error={errors.location} />
               </Field>
-            </div>
-            
-            {/* Currency Info Box */}
-            <div style={{ background: C.accentLight, border: `1px solid #c7d2fe`, borderRadius: 8, padding: '8px 12px', marginTop: -8, marginBottom: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <FaMoneyBillWave style={{ color: C.accent, fontSize: 14 }} />
-                <span style={{ fontSize: 12, color: C.accent, fontWeight: 600 }}>
-                  Selected: {formData.currency} ({CURRENCY_SYMBOLS[formData.currency] || '$'})
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <Field label="Capacity" required error={errors.capacity}>
+                  <Input icon={RiParkingBoxLine} name="capacity" type="number" min="1" value={formData.capacity} onChange={handleChange} placeholder="e.g. 100" error={errors.capacity} />
+                </Field>
+                <Field label="Currency" required error={errors.currency}>
+                  <Select icon={FaMoneyBillWave} name="currency" value={formData.currency} onChange={handleChange} error={errors.currency}>
+                    <option value="USD">USD — $</option>
+                    <option value="EUR">EUR — €</option>
+                    <option value="GBP">GBP — £</option>
+                    <option value="INR">INR — ₹</option>
+                    <option value="JPY">JPY — ¥</option>
+                    <option value="CAD">CAD — C$</option>
+                    <option value="AUD">AUD — A$</option>
+                    <option value="CHF">CHF</option>
+                    <option value="CNY">CNY — ¥</option>
+                    <option value="SGD">SGD — S$</option>
+                  </Select>
+                </Field>
+              </div>
+
+              {/* Currency pill */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: -6 }}>
+                <span style={{
+                  fontFamily: 'DM Mono, monospace', fontSize: 10, fontWeight: 700,
+                  letterSpacing: '.08em', textTransform: 'uppercase',
+                  background: '#eff6ff', color: '#1d4ed8',
+                  padding: '3px 10px', borderRadius: 20,
+                }}>
+                  {formData.currency} · {sym}
                 </span>
               </div>
-            </div>
-            
-            <Field label={`Hourly Rate in ${formData.currency}`} required error={errors.hourlyRate}>
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1 }}>
-                  <span style={{ color: errors.hourlyRate ? C.red : C.muted, fontSize: 14, fontWeight: 'bold' }}>
-                    {CURRENCY_SYMBOLS[formData.currency] || '$'}
-                  </span>
+
+              {/* Vehicle-specific pricing */}
+              <div style={{ 
+                background: '#f8fafc', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: 10, 
+                padding: 16,
+                marginTop: 8
+              }}>
+                <div style={{ 
+                  fontFamily: 'DM Mono, monospace', 
+                  fontSize: 10, 
+                  fontWeight: 700,
+                  letterSpacing: '.08em', 
+                  textTransform: 'uppercase',
+                  color: '#64748b', 
+                  marginBottom: 12 
+                }}>
+                  Vehicle Pricing
                 </div>
-                <input
-                  name="hourlyRate"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.hourlyRate}
-                  onChange={handleChange}
-                  placeholder={`e.g. 5.00 ${CURRENCY_SYMBOLS[formData.currency] || '$'}'`}
-                  style={{
-                    width: '100%', fontFamily: 'Inter, sans-serif',
-                    padding: '9px 12px 9px 34px',
-                    paddingRight: 44,
-                    border: `1.5px solid ${errors.hourlyRate ? C.red : C.border}`,
-                    borderRadius: 9, fontSize: 13.5, color: C.text,
-                    background: C.card, outline: 'none',
-                    transition: 'border-color 0.15s, box-shadow 0.15s',
-                  }}
-                  onFocus={e => {
-                    e.target.style.borderColor = errors.hourlyRate ? C.red : C.borderFocus;
-                    e.target.style.boxShadow = `0 0 0 3px ${errors.hourlyRate ? '#fee2e2' : C.accentLight}`;
-                  }}
-                  onBlur={e => {
-                    e.target.style.borderColor = errors.hourlyRate ? C.red : C.border;
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
-                <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-                  <span style={{ color: C.muted, fontSize: 14, fontWeight: 'bold' }}>
-                    {CURRENCY_SYMBOLS[formData.currency] || '$'}
-                  </span>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  <Field label="Cycle" error={errors.cycleRate}>
+                    <div style={{ position: 'relative' }}>
+                      <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1, fontFamily: 'DM Serif Display, serif', fontSize: 14, color: errors.cycleRate ? '#dc2626' : '#aaa' }}>
+                        {sym}
+                      </div>
+                      <input
+                        className={`es-input has-icon${errors.cycleRate ? ' error' : ''}`}
+                        name="pricing.cycle"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.pricing.cycle}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          pricing: { ...prev.pricing, cycle: parseFloat(e.target.value) || 0 }
+                        }))}
+                        placeholder="5.00"
+                      />
+                    </div>
+                  </Field>
+                  
+                  <Field label="Bike" error={errors.bikeRate}>
+                    <div style={{ position: 'relative' }}>
+                      <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1, fontFamily: 'DM Serif Display, serif', fontSize: 14, color: errors.bikeRate ? '#dc2626' : '#aaa' }}>
+                        {sym}
+                      </div>
+                      <input
+                        className={`es-input has-icon${errors.bikeRate ? ' error' : ''}`}
+                        name="pricing.bike"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.pricing.bike}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          pricing: { ...prev.pricing, bike: parseFloat(e.target.value) || 0 }
+                        }))}
+                        placeholder="10.00"
+                      />
+                    </div>
+                  </Field>
+                  
+                  <Field label="Car" error={errors.carRate}>
+                    <div style={{ position: 'relative' }}>
+                      <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1, fontFamily: 'DM Serif Display, serif', fontSize: 14, color: errors.carRate ? '#dc2626' : '#aaa' }}>
+                        {sym}
+                      </div>
+                      <input
+                        className={`es-input has-icon${errors.carRate ? ' error' : ''}`}
+                        name="pricing.car"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.pricing.car}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          pricing: { ...prev.pricing, car: parseFloat(e.target.value) || 0 }
+                        }))}
+                        placeholder="20.00"
+                      />
+                    </div>
+                  </Field>
                 </div>
               </div>
-            </Field>
-            <Field label="Contact Number">
-              <Input icon={MdOutlinePhone} name="contactNumber" value={formData.contactNumber} onChange={handleChange} placeholder="e.g. +1 555-000-0000" />
-            </Field>
-            <Field label="Description">
-              <Textarea name="description" value={formData.description} onChange={handleChange} rows={4} placeholder="Describe the stand, facilities, access info…" />
-            </Field>
-          </SectionCard>
 
-          {/* ── Admin Information ── */}
-          <SectionCard title="Admin Information" subtitle="Assigned administrator for this stand" Icon={MdOutlineAdminPanelSettings} iconBg="#ede9fe" iconColor="#8b5cf6">
-            <Field label="Admin Name" required error={errors.adminName}>
-              <Input icon={BsPersonFill} name="adminName" value={formData.adminName} onChange={handleChange} placeholder="e.g. John Doe" error={errors.adminName} />
-            </Field>
-            <Field label="Admin Email" required error={errors.adminEmail}>
-              <Input icon={FaEnvelope} name="adminEmail" type="email" value={formData.adminEmail} onChange={handleChange} placeholder="admin@example.com" error={errors.adminEmail} />
-            </Field>
-            <Field label="Admin Password" hint="Leave blank to keep the current password">
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1 }}>
-                  <FaLock style={{ color: C.muted, fontSize: 13 }} />
+              <Field label="Contact Number">
+                <Input icon={MdOutlinePhone} name="contactNumber" value={formData.contactNumber} onChange={handleChange} placeholder="e.g. +91 98765 43210" />
+              </Field>
+
+              <Field label="Description">
+                <textarea className="es-textarea" name="description" value={formData.description} onChange={handleChange} rows={4} placeholder="Describe the stand, facilities, access info…" />
+              </Field>
+            </SectionCard>
+
+            {/* ── Admin Information ── */}
+            <SectionCard
+              title="Admin Information"
+              subtitle="Assigned administrator for this stand"
+              Icon={MdOutlineAdminPanelSettings}
+              iconBg="#f5f3ff"
+              iconColor="#7c3aed"
+            >
+              <Field label="Admin Name" required error={errors.adminName}>
+                <Input icon={BsPersonFill} name="adminName" value={formData.adminName} onChange={handleChange} placeholder="e.g. John Doe" error={errors.adminName} />
+              </Field>
+
+              <Field label="Admin Email" required error={errors.adminEmail}>
+                <Input icon={FaEnvelope} name="adminEmail" type="email" value={formData.adminEmail} onChange={handleChange} placeholder="admin@example.com" error={errors.adminEmail} />
+              </Field>
+
+              <Field label="Admin Password" hint="Leave blank to keep the current password">
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1 }}>
+                    <FaLock style={{ color: '#ccc', fontSize: 12 }} />
+                  </div>
+                  <input
+                    className="es-input has-icon"
+                    type={showPassword ? 'text' : 'password'}
+                    name="adminPassword"
+                    value={formData.adminPassword}
+                    onChange={handleChange}
+                    placeholder="Leave blank to keep current"
+                    style={{ paddingRight: 40 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    style={{ position: 'absolute', right: 11, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: 2, display: 'flex' }}
+                  >
+                    {showPassword ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+                  </button>
                 </div>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="adminPassword"
-                  value={formData.adminPassword}
-                  onChange={handleChange}
-                  placeholder="Leave blank to keep current password"
-                  style={{
-                    width: '100%', fontFamily: 'Inter, sans-serif',
-                    padding: '9px 40px 9px 34px',
-                    border: `1.5px solid ${C.border}`, borderRadius: 9,
-                    fontSize: 13.5, color: C.text, background: C.card, outline: 'none',
-                    transition: 'border-color 0.15s, box-shadow 0.15s',
-                  }}
-                  onFocus={e => { e.target.style.borderColor = C.borderFocus; e.target.style.boxShadow = `0 0 0 3px ${C.accentLight}`; }}
-                  onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = 'none'; }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  style={{ position: 'absolute', right: 11, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.muted, padding: 2 }}
-                >
-                  {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
-                </button>
+              </Field>
+
+              {/* Info box */}
+              <div className="info-box">
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+                  About Admin Updates
+                </div>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: '#777', lineHeight: 1.6 }}>
+                  Changes to admin email or name will update the administrator's account credentials. A password change will be applied immediately.
+                </div>
               </div>
-            </Field>
+            </SectionCard>
+          </div>
 
-            {/* Info box */}
-            <div style={{ background: C.accentLight, border: `1px solid #c7d2fe`, borderRadius: 10, padding: '14px 16px', marginTop: 4 }}>
-              <p style={{ fontSize: 12.5, color: C.accent, fontWeight: 600, margin: '0 0 4px' }}>💡 About Admin Updates</p>
-              <p style={{ fontSize: 12, color: '#4338ca', margin: 0, lineHeight: 1.55 }}>
-                Changes to admin email or name will update the administrator's account credentials. A password change will be applied immediately.
-              </p>
-            </div>
-          </SectionCard>
-        </div>
-
-        {/* ── Action Bar ── */}
-        <div style={{
-          background: C.card, border: `1px solid ${C.border}`, borderRadius: 14,
-          padding: '16px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
-        }}>
-          <button
-            type="button"
-            onClick={() => setShowDeleteModal(true)}
-            disabled={deleteStandMutation.isPending}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: C.redLight, border: `1px solid #fca5a5`, borderRadius: 9,
-              padding: '9px 18px', fontSize: 13, fontWeight: 600, color: C.red,
-              cursor: deleteStandMutation.isPending ? 'not-allowed' : 'pointer',
-              opacity: deleteStandMutation.isPending ? 0.7 : 1, fontFamily: 'Inter, sans-serif',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => { if (!deleteStandMutation.isPending) e.currentTarget.style.background = '#fecaca'; }}
-            onMouseLeave={e => e.currentTarget.style.background = C.redLight}
-          >
-            <FiTrash2 size={14} />
-            Delete Stand
-          </button>
-
-          <div style={{ display: 'flex', gap: 10 }}>
+          {/* ── Action Bar ── */}
+          <div className="db-card" style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <button
               type="button"
-              onClick={() => navigate('/superadmin/stands')}
-              style={{
-                background: C.bg, border: `1px solid ${C.border}`, borderRadius: 9,
-                padding: '9px 18px', fontSize: 13, fontWeight: 600, color: C.sub,
-                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-              }}
+              className="delete-btn"
+              onClick={() => setShowDeleteModal(true)}
+              disabled={deleteMutation.isPending}
             >
-              Cancel
+              <FiTrash2 size={13} /> Delete Stand
             </button>
-            <button
-              type="submit"
-              disabled={updateStandMutation.isPending}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: updateStandMutation.isPending ? '#a5b4fc' : C.accent,
-                border: 'none', borderRadius: 9,
-                padding: '9px 22px', fontSize: 13, fontWeight: 600, color: '#fff',
-                cursor: updateStandMutation.isPending ? 'not-allowed' : 'pointer',
-                boxShadow: updateStandMutation.isPending ? 'none' : '0 2px 8px rgba(99,102,241,0.38)',
-                fontFamily: 'Inter, sans-serif', transition: 'background 0.15s',
-              }}
-            >
-              <FiSave size={14} />
-              {updateStandMutation.isPending ? 'Saving…' : 'Save Changes'}
-            </button>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" className="cancel-btn" onClick={() => navigate('/superadmin/stands')}>
+                Cancel
+              </button>
+              <button type="submit" className="save-btn" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? <><Spinner /> Saving…</> : <><FiSave size={13} /> Save Changes</>}
+              </button>
+            </div>
           </div>
-        </div>
-      </form>
-    </div>
+        </form>
+
+      </div>
+    </>
   );
 };
 

@@ -59,7 +59,7 @@ const createStand = async (req, res, next) => {
       });
     }
 
-    const { name, location, capacity, hourlyRate, currency, description, contactNumber, adminName, adminEmail, adminPassword } = req.body;
+    const { name, location, capacity, pricing, currency, description, contactNumber, adminName, adminEmail, adminPassword } = req.body;
 
     // Check if stand already exists
     const standExists = await Stand.findOne({ name });
@@ -84,7 +84,7 @@ const createStand = async (req, res, next) => {
       name,
       location,
       capacity,
-      hourlyRate,
+      pricing,
       currency,
       description
     });
@@ -123,10 +123,10 @@ const createStand = async (req, res, next) => {
 
 // @desc    Update stand
 // @route   PUT /api/stands/:id
-// @access  Private (Super Admin only)
+// @access  Private (Super Admin and Stand Admin)
 const updateStand = async (req, res, next) => {
   try {
-    const { name, location, capacity, hourlyRate, currency, description, contactNumber, adminName, adminEmail, adminPassword } = req.body;
+    const { name, location, capacity, pricing, currency, description, contactNumber, adminName, adminEmail, adminPassword } = req.body;
 
     // Check if stand exists
     let stand = await Stand.findById(req.params.id);
@@ -137,13 +137,21 @@ const updateStand = async (req, res, next) => {
       });
     }
 
+    // Check if user has permission to update this stand
+    if (req.user.role === 'stand_admin' && stand.admin.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only update your assigned stand'
+      });
+    }
+
     // Update stand details if provided
-    if (name || location || capacity || hourlyRate || currency || description || contactNumber) {
+    if (name || location || capacity || pricing || currency || description || contactNumber) {
       const updateData = {};
       if (name) updateData.name = name;
       if (location) updateData.location = location;
       if (capacity) updateData.capacity = capacity;
-      if (hourlyRate) updateData.hourlyRate = hourlyRate;
+      if (pricing) updateData.pricing = pricing;
       if (currency) updateData.currency = currency;
       if (description) updateData.description = description;
       if (contactNumber) updateData.contactNumber = contactNumber;

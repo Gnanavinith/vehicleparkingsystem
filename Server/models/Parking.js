@@ -51,6 +51,26 @@ const parkingSchema = new mongoose.Schema({
   duration: {
     type: Number, // in minutes
     default: 0
+  },
+  paymentMethod: {
+    type: String,
+    enum: {
+      values: ['cash', 'upi', 'whatsapp', null],
+      message: '{VALUE} is not a valid payment method'
+    },
+    default: null
+  },
+  paymentDetails: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+  customerName: {
+    type: String,
+    trim: true
+  },
+  customerPhone: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true

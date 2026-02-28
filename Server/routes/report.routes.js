@@ -5,12 +5,14 @@ const {
   getDailyReport, 
   getMonthlyReport, 
   getStandReport, 
-  getRevenueStats 
+  getRevenueStats,
+  getDashboardStats
 } = require('../controllers/report.controller');
 
 router.get('/daily', protect, adminRoles, getDailyReport);
 router.get('/monthly', protect, adminRoles, getMonthlyReport);
 router.get('/stand/:standId', protect, adminRoles, getStandReport);
 router.get('/revenue', protect, adminRoles, getRevenueStats);
+router.get('/dashboard', protect, getDashboardStats);
 
 module.exports = router;

@@ -15,6 +15,8 @@ const standRoutes = require('./routes/stand.routes');
 const staffRoutes = require('./routes/staff.routes');
 const parkingRoutes = require('./routes/parking.routes');
 const reportRoutes = require('./routes/report.routes');
+const pricingRoutes = require('./routes/pricing.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
 
 // Import middleware
 const { errorHandler } = require('./middleware/error.middleware');
@@ -38,6 +40,8 @@ app.use('/api/stands', standRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/parkings', parkingRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/pricing', pricingRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

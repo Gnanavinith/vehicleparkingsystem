@@ -73,9 +73,79 @@ const getRevenueStats = async (req, res, next) => {
   }
 };
 
+// @desc    Get dashboard statistics for superadmin
+// @route   GET /api/reports/dashboard
+// @access  Private (Super Admin only)
+const getDashboardStats = async (req, res, next) => {
+  try {
+    // Only allow super admin access
+    if (req.user.role !== 'super_admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Super admin only.'
+      });
+    }
+
+    // Get counts for different entities
+    const Stand = require('../models/Stand');
+    const User = require('../models/User');
+    const Parking = require('../models/Parking');
+
+    const totalStands = await Stand.countDocuments({});
+    const totalStandAdmins = await User.countDocuments({ role: 'stand_admin' });
+    const totalStaff = await User.countDocuments({ role: 'staff' });
+    const activeParkings = await Parking.countDocuments({ status: 'active' });
+
+    // Calculate today's revenue
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const todayParkings = await Parking.find({
+      checkoutTime: {
+        $gte: startOfDay,
+        $lte: endOfDay
+      },
+      status: 'completed'
+    });
+
+    const todayRevenue = todayParkings.reduce((sum, parking) => sum + (parking.amount || 0), 0);
+
+    // Calculate monthly revenue (current month)
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const monthlyParkings = await Parking.find({
+      checkoutTime: {
+        $gte: startOfMonth,
+        $lte: endOfMonth
+      },
+      status: 'completed'
+    });
+
+    const monthlyRevenue = monthlyParkings.reduce((sum, parking) => sum + (parking.amount || 0), 0);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalStands,
+        totalStandAdmins,
+        totalStaff,
+        activeParkings,
+        todayRevenue,
+        monthlyRevenue
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getDailyReport,
   getMonthlyReport,
   getStandReport,
-  getRevenueStats
+  getRevenueStats,
+  getDashboardStats
 };

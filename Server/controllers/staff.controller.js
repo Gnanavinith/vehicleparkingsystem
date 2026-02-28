@@ -49,7 +49,7 @@ const getStaffMember = async (req, res, next) => {
     if (req.user.role === 'stand_admin' && 
         req.user.stand && 
         staff.stand && 
-        staff.stand._id.toString() !== req.user.stand.toString()) {
+        staff.stand.toString() !== req.user.stand.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Access denied to this staff member'
@@ -134,7 +134,7 @@ const updateStaff = async (req, res, next) => {
     if (req.user.role === 'stand_admin' && 
         req.user.stand && 
         staff.stand && 
-        staff.stand._id.toString() !== req.user.stand.toString()) {
+        staff.stand.toString() !== req.user.stand.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Access denied to this staff member'

@@ -3,117 +3,181 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getStaffMember, updateStaff } from '../api';
 import { FaArrowLeft, FaSave, FaUser, FaEnvelope, FaPhone, FaLock, FaBriefcase } from 'react-icons/fa';
+import { FiAlertCircle } from 'react-icons/fi';
 
-// ─── Design Tokens ────────────────────────────────────────────────────────────
-const C = {
-  bg: '#f8f9fb',
-  card: '#ffffff',
-  border: '#e5e7eb',
-  text: '#0f172a',
-  sub: '#6b7280',
-  muted: '#9ca3af',
-  accent: '#0f172a',
-  accentLight: '#f3f4f6',
-  red: '#ef4444',
-  redLight: '#fee2e2',
-};
+// ─── Global CSS ───────────────────────────────────────────────────────────────
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-// ─── Form Field ───────────────────────────────────────────────────────────────
+  @keyframes fadeUp  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes spin    { to   { transform: rotate(360deg); } }
+
+  .es-wrap { font-family: 'DM Sans', sans-serif; animation: fadeUp .28s ease; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; font-weight: 600;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: #aaa; display: block; margin-bottom: 6px;
+  }
+
+  .db-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #ebebeb;
+  }
+
+  .es-input {
+    width: 100%;
+    background: #fafafa;
+    border: 1.5px solid #ebebeb;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    color: #0a0a0a;
+    outline: none;
+    transition: all .15s;
+  }
+  .es-input:focus {
+    border-color: #0a0a0a;
+    background: #fff;
+    box-shadow: 0 0 0 3px #f5f5f5;
+  }
+  .es-input.has-error { border-color: #dc2626 !important; }
+  .es-input.has-error:focus { box-shadow: 0 0 0 3px #fef2f2; }
+
+  .es-input option { font-family: 'DM Sans', sans-serif; }
+
+  .back-btn {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: #f5f5f5; border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .14s; flex-shrink: 0;
+  }
+  .back-btn:hover { background: #ebebeb; transform: translateX(-1px); }
+
+  .cancel-btn {
+    padding: 10px 20px;
+    background: transparent;
+    border: 1.5px solid #ebebeb;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600;
+    color: #888; cursor: pointer; transition: all .14s;
+  }
+  .cancel-btn:hover { border-color: #0a0a0a; color: #0a0a0a; background: #fafafa; }
+
+  .save-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px;
+    background: #0a0a0a; color: #fff;
+    border: none; border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all .14s;
+  }
+  .save-btn:hover:not(:disabled) { background: #222; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+  .save-btn:disabled { background: #d4d4d4; cursor: not-allowed; }
+
+  .field-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: #888; display: flex; align-items: center; gap: 3px;
+  }
+
+  .field-error {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: #dc2626;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  .field-hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: #bbb;
+  }
+`;
+
+// ─── Field wrapper ─────────────────────────────────────────────────────────────
 const Field = ({ label, required, error, hint, children }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-    <label style={{ fontSize: '13px', fontWeight: '500', color: C.sub, display: 'flex', alignItems: 'center', gap: '3px' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <label className="field-label">
       {label}
-      {required && <span style={{ color: C.red }}>*</span>}
+      {required && <span style={{ color: '#dc2626', fontFamily: 'DM Sans, sans-serif' }}>*</span>}
     </label>
     {children}
-    {error && <p style={{ fontSize: '12px', color: C.red, margin: 0 }}>{error}</p>}
-    {hint && !error && <p style={{ fontSize: '12px', color: C.muted, margin: 0 }}>{hint}</p>}
+    {error && (
+      <span className="field-error">
+        <FiAlertCircle size={10} /> {error}
+      </span>
+    )}
+    {hint && !error && <span className="field-hint">{hint}</span>}
   </div>
 );
 
-// ─── Input ────────────────────────────────────────────────────────────────────
+// ─── Input ─────────────────────────────────────────────────────────────────────
 const Input = ({ icon: Icon, error, type = 'text', ...props }) => (
   <div style={{ position: 'relative' }}>
     {Icon && (
-      <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: error ? C.red : C.muted, pointerEvents: 'none' }}>
-        <Icon size={13} />
+      <div style={{
+        position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+        color: error ? '#dc2626' : '#bbb', pointerEvents: 'none',
+      }}>
+        <Icon size={12} />
       </div>
     )}
     <input
       type={type}
+      className={`es-input${error ? ' has-error' : ''}`}
+      style={{ padding: `10px 12px 10px ${Icon ? '34px' : '12px'}` }}
       {...props}
-      style={{
-        width: '100%',
-        padding: `10px 12px 10px ${Icon ? '36px' : '12px'}`,
-        border: `1.5px solid ${error ? C.red : C.border}`,
-        borderRadius: '10px',
-        fontSize: '14px',
-        color: C.text,
-        background: C.card,
-        fontFamily: "'Geist', -apple-system, sans-serif",
-        outline: 'none',
-        transition: 'border-color 0.15s, box-shadow 0.15s',
-      }}
-      onFocus={e => {
-        e.target.style.borderColor = error ? C.red : C.accent;
-        e.target.style.boxShadow = `0 0 0 3px ${error ? 'rgba(239,68,68,0.1)' : 'rgba(15,23,42,0.05)'}`;
-      }}
-      onBlur={e => {
-        e.target.style.borderColor = error ? C.red : C.border;
-        e.target.style.boxShadow = 'none';
-      }}
     />
   </div>
 );
 
-// ─── Select ───────────────────────────────────────────────────────────────────
+// ─── Select ────────────────────────────────────────────────────────────────────
 const Select = ({ icon: Icon, error, children, ...props }) => (
   <div style={{ position: 'relative' }}>
     {Icon && (
-      <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: error ? C.red : C.muted, pointerEvents: 'none', zIndex: 1 }}>
-        <Icon size={13} />
+      <div style={{
+        position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+        color: error ? '#dc2626' : '#bbb', pointerEvents: 'none', zIndex: 1,
+      }}>
+        <Icon size={12} />
       </div>
     )}
     <select
-      {...props}
+      className={`es-input${error ? ' has-error' : ''}`}
       style={{
-        width: '100%',
-        padding: `10px 36px 10px ${Icon ? '36px' : '12px'}`,
-        border: `1.5px solid ${error ? C.red : C.border}`,
-        borderRadius: '10px',
-        fontSize: '14px',
-        color: C.text,
-        background: C.card,
-        fontFamily: "'Geist', -apple-system, sans-serif",
-        outline: 'none',
+        padding: `10px 36px 10px ${Icon ? '34px' : '12px'}`,
         appearance: 'none',
-        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23aaa' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
         backgroundPosition: 'right 12px center',
         backgroundRepeat: 'no-repeat',
         backgroundSize: '16px',
-        transition: 'border-color 0.15s, box-shadow 0.15s',
         cursor: 'pointer',
       }}
-      onFocus={e => {
-        e.target.style.borderColor = error ? C.red : C.accent;
-        e.target.style.boxShadow = `0 0 0 3px ${error ? 'rgba(239,68,68,0.1)' : 'rgba(15,23,42,0.05)'}`;
-      }}
-      onBlur={e => {
-        e.target.style.borderColor = error ? C.red : C.border;
-        e.target.style.boxShadow = 'none';
-      }}
+      {...props}
     >
       {children}
     </select>
   </div>
 );
 
-// ─── Spinner ──────────────────────────────────────────────────────────────────
-const Spinner = ({ color = 'white' }) => (
-  <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTop: `2px solid ${color}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+// ─── Spinner ───────────────────────────────────────────────────────────────────
+const Spinner = ({ color = '#fff', size = 14 }) => (
+  <div style={{
+    width: size, height: size,
+    border: `2px solid ${color}33`,
+    borderTopColor: color,
+    borderRadius: '50%',
+    animation: 'spin .6s linear infinite',
+    flexShrink: 0,
+  }} />
 );
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main Component ────────────────────────────────────────────────────────────
 const EditStaff = () => {
   const { id }      = useParams();
   const navigate    = useNavigate();
@@ -122,14 +186,12 @@ const EditStaff = () => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', role: 'staff', password: '' });
   const [errors, setErrors]     = useState({});
 
-  // Fetch existing staff member
   const { data: staffData, isLoading: isFetching, error: fetchError } = useQuery({
     queryKey: ['staff-member', id],
     queryFn: () => getStaffMember(id),
     enabled: !!id,
   });
 
-  // Populate form on load
   useEffect(() => {
     if (staffData) {
       setFormData({
@@ -142,7 +204,6 @@ const EditStaff = () => {
     }
   }, [staffData]);
 
-  // Update mutation
   const updateMutation = useMutation({
     mutationFn: data => updateStaff(id, data),
     onSuccess: () => {
@@ -180,86 +241,100 @@ const EditStaff = () => {
     updateMutation.mutate(payload);
   };
 
-  // ── Loading state ──
-  if (isFetching) {
-    return (
-      <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <div style={{ width: 36, height: 36, border: `3px solid ${C.accentLight}`, borderTop: `3px solid ${C.accent}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+  // ── Loading ──
+  if (isFetching) return (
+    <>
+      <style>{css}</style>
+      <div style={{ minHeight: '100vh', background: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Spinner color="#0a0a0a" size={32} />
       </div>
-    );
-  }
+    </>
+  );
 
-  // ── Error state ──
-  if (fetchError) {
-    return (
-      <div style={{ minHeight: '100vh', background: C.bg, padding: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Geist', sans-serif" }}>
-        <div style={{ background: C.card, borderRadius: '16px', padding: '40px', maxWidth: '480px', width: '100%', textAlign: 'center', border: `1px solid ${C.border}` }}>
-          <p style={{ color: C.red, fontWeight: '600', marginBottom: '8px' }}>Failed to load staff member</p>
-          <p style={{ color: C.sub, fontSize: '14px', marginBottom: '24px' }}>{fetchError.message}</p>
-          <button onClick={() => navigate('/standadmin/staff')} style={{ background: C.accent, color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', cursor: 'pointer', fontWeight: '500' }}>
+  // ── Fetch error ──
+  if (fetchError) return (
+    <>
+      <style>{css}</style>
+      <div style={{ minHeight: '100vh', background: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+        <div className="db-card" style={{ padding: '40px', maxWidth: 440, width: '100%', textAlign: 'center' }}>
+          <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: 20, fontStyle: 'italic', color: '#0a0a0a', marginBottom: 8 }}>
+            Failed to load
+          </div>
+          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#aaa', marginBottom: 24 }}>
+            {fetchError.message}
+          </div>
+          <button className="save-btn" onClick={() => navigate('/standadmin/staff')}>
             Back to Staff
           </button>
         </div>
       </div>
-    );
-  }
+    </>
+  );
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Geist', -apple-system, sans-serif; }
-        .submit-btn { transition: all 0.15s; }
-        .submit-btn:hover:not(:disabled) { background: #000 !important; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; }
-        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed !important; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+      <style>{css}</style>
+      <div className="es-wrap" style={{ padding: '28px 32px', minHeight: '100vh', background: '#f7f7f7' }}>
 
-      <div style={{ minHeight: '100vh', background: C.bg, padding: '32px', fontFamily: "'Geist', -apple-system, sans-serif" }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto', background: C.card, borderRadius: '16px', border: `1px solid ${C.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
-
-          {/* Header */}
-          <div style={{ padding: '24px 32px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button
-              onClick={() => navigate('/standadmin/staff')}
-              style={{ width: '36px', height: '36px', borderRadius: '10px', background: C.accentLight, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.15s', flexShrink: 0 }}
-              onMouseEnter={e => e.currentTarget.style.background = C.border}
-              onMouseLeave={e => e.currentTarget.style.background = C.accentLight}
-            >
-              <FaArrowLeft style={{ color: C.sub, fontSize: '14px' }} />
+        {/* Page header */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <button className="back-btn" onClick={() => navigate('/standadmin/staff')}>
+              <FaArrowLeft size={13} color="#555" />
             </button>
             <div>
-              <h1 style={{ fontSize: '20px', fontWeight: '600', color: C.text, letterSpacing: '-0.02em' }}>Edit Staff Member</h1>
-              <p style={{ fontSize: '13px', color: C.muted, marginTop: '2px' }}>Update staff member details</p>
+              <span className="section-label" style={{ marginBottom: 3 }}>Staff</span>
+              <div style={{
+                fontFamily: "'DM Serif Display', serif",
+                fontSize: 28, letterSpacing: '-0.02em',
+                color: '#0a0a0a', lineHeight: 1, fontStyle: 'italic',
+              }}>
+                Edit Staff Member
+              </div>
             </div>
           </div>
+          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#aaa', letterSpacing: '.04em' }}>
+            {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </div>
+        </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} style={{ padding: '32px' }}>
-            {/* Submit error banner */}
-            {errors.submit && (
-              <div style={{ background: C.redLight, border: '1px solid #fecaca', borderRadius: '10px', padding: '14px 18px', marginBottom: '24px', color: C.red, fontSize: '14px' }}>
-                <strong>Error:</strong> {errors.submit}
-              </div>
-            )}
+        {/* Form card */}
+        <div className="db-card" style={{ maxWidth: 640, padding: '32px' }}>
 
-            <div style={{ display: 'grid', gap: '20px', marginBottom: '32px' }}>
+          {/* Submit error */}
+          {errors.submit && (
+            <div style={{
+              background: '#fef2f2', border: '1px solid #fca5a5',
+              borderRadius: 10, padding: '12px 16px',
+              marginBottom: 24,
+              display: 'flex', alignItems: 'center', gap: 10,
+              fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#dc2626',
+            }}>
+              <FiAlertCircle size={13} />
+              {errors.submit}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div style={{ display: 'grid', gap: 20, marginBottom: 28 }}>
+
+              {/* Full Name */}
               <Field label="Full Name" required error={errors.name}>
                 <Input icon={FaUser} name="name" value={formData.name} onChange={handleChange} placeholder="Enter full name" error={errors.name} />
               </Field>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              {/* Email + Phone */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <Field label="Email" required error={errors.email}>
                   <Input icon={FaEnvelope} name="email" type="email" value={formData.email} onChange={handleChange} placeholder="staff@example.com" error={errors.email} />
                 </Field>
-                <Field label="Phone Number" required error={errors.phone}>
-                  <Input icon={FaPhone} name="phone" value={formData.phone} onChange={handleChange} placeholder="+1 (555) 000-0000" error={errors.phone} />
+                <Field label="Phone" required error={errors.phone}>
+                  <Input icon={FaPhone} name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 98765 43210" error={errors.phone} />
                 </Field>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              {/* Role + Password */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <Field label="Role" required error={errors.role}>
                   <Select icon={FaBriefcase} name="role" value={formData.role} onChange={handleChange} error={errors.role}>
                     <option value="staff">Staff</option>
@@ -268,37 +343,30 @@ const EditStaff = () => {
                     <option value="coordinator">Coordinator</option>
                   </Select>
                 </Field>
-                <Field label="Password" hint="Leave blank to keep current password">
+                <Field label="Password" hint="Leave blank to keep current">
                   <Input icon={FaLock} name="password" type="password" value={formData.password} onChange={handleChange} placeholder="New password (optional)" />
                 </Field>
               </div>
             </div>
 
+            {/* Divider */}
+            <div style={{ borderTop: '1px solid #f5f5f5', marginBottom: 24 }} />
+
             {/* Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button
-                type="button"
-                onClick={() => navigate('/standadmin/staff')}
-                style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '11px 24px', fontSize: '14px', fontWeight: '500', color: C.sub, cursor: 'pointer', transition: 'background 0.15s' }}
-                onMouseEnter={e => e.currentTarget.style.background = C.accentLight}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button type="button" className="cancel-btn" onClick={() => navigate('/standadmin/staff')}>
                 Cancel
               </button>
-              <button
-                type="submit"
-                className="submit-btn"
-                disabled={updateMutation.isPending}
-                style={{ background: C.accent, color: 'white', border: 'none', borderRadius: '10px', padding: '11px 24px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-              >
+              <button type="submit" className="save-btn" disabled={updateMutation.isPending}>
                 {updateMutation.isPending
-                  ? <><Spinner /> Updating...</>
-                  : <><FaSave size={13} /> Update Staff Member</>
+                  ? <><Spinner /> Updating…</>
+                  : <><FaSave size={12} /> Update Staff Member</>
                 }
               </button>
             </div>
           </form>
         </div>
+
       </div>
     </>
   );

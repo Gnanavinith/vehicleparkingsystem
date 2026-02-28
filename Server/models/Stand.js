@@ -18,16 +18,32 @@ const standSchema = new mongoose.Schema({
     required: [true, 'Capacity is required'],
     min: [1, 'Capacity must be at least 1']
   },
-  hourlyRate: {
-    type: Number,
-    required: [true, 'Hourly rate is required'],
-    min: [0, 'Hourly rate cannot be negative']
+  // Vehicle-specific pricing
+  pricing: {
+    cycle: {
+      type: Number,
+      required: [true, 'Cycle rate is required'],
+      min: [0, 'Cycle rate cannot be negative'],
+      default: 5
+    },
+    bike: {
+      type: Number,
+      required: [true, 'Bike rate is required'],
+      min: [0, 'Bike rate cannot be negative'],
+      default: 10
+    },
+    car: {
+      type: Number,
+      required: [true, 'Car rate is required'],
+      min: [0, 'Car rate cannot be negative'],
+      default: 20
+    }
   },
   currency: {
     type: String,
     required: [true, 'Currency is required'],
     enum: ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'SGD'],
-    default: 'USD'
+    default: 'INR'
   },
   currentOccupancy: {
     type: Number,

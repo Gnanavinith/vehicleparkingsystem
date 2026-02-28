@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect, adminRoles, superAdminOnly } = require('../middleware/auth.middleware');
+const { protect, adminRoles, superAdminOnly, standAdminOnly } = require('../middleware/auth.middleware');
 const { 
   getStands, 
   getStand, 
@@ -16,7 +16,7 @@ router.route('/')
 
 router.route('/:id')
   .get(protect, getStand)
-  .put(protect, superAdminOnly, updateStand)
+  .put(protect, adminRoles, updateStand)  // Allow both super_admin and stand_admin
   .delete(protect, superAdminOnly, deleteStand);
 
 router.put('/:id/assign-admin', protect, superAdminOnly, assignAdmin);

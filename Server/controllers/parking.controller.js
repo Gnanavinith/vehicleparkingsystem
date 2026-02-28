@@ -57,7 +57,8 @@ const createParking = async (req, res, next) => {
       vehicleNumber: vehicleNumber.toUpperCase(),
       vehicleType: vehicleType.toLowerCase(),
       stand: req.user.stand,
-      staff: req.user.id
+      staff: req.user.id,
+      status: 'active'  // Explicitly set status to ensure it matches the filter
     });
 
     // Update stand occupancy
@@ -80,6 +81,7 @@ const createParking = async (req, res, next) => {
 const checkoutParkingById = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { paymentMethod, whatsappNumber } = req.body;
     
     const parking = await Parking.findOne({
       _id: id,
@@ -97,6 +99,15 @@ const checkoutParkingById = async (req, res, next) => {
     // Set checkout time
     parking.outTime = new Date();
     parking.status = 'completed';
+    
+    // Store payment details
+    if (paymentMethod) {
+      parking.paymentMethod = paymentMethod;
+      parking.paymentDetails = {
+        method: paymentMethod,
+        ...(whatsappNumber && { whatsappNumber })
+      };
+    }
     
     // Calculate amount
     const stand = await Stand.findById(req.user.stand);
@@ -212,10 +223,16 @@ const getTodayParking = async (req, res, next) => {
     .populate('staff', 'name email')
     .sort({ createdAt: -1 });
 
+    // Add customer details if they exist
+    const parkingListWithCustomer = parkingList.map(parking => {
+      const parkingObj = parking.toObject();
+      return parkingObj;
+    });
+
     res.status(200).json({
       success: true,
-      count: parkingList.length,
-      data: parkingList
+      count: parkingListWithCustomer.length,
+      data: parkingListWithCustomer
     });
   } catch (error) {
     next(error);
@@ -234,10 +251,16 @@ const getActiveParkings = async (req, res, next) => {
     .populate('staff', 'name')
     .sort({ createdAt: -1 });
 
+    // Add customer details if they exist
+    const activeParkingsWithCustomer = activeParkings.map(parking => {
+      const parkingObj = parking.toObject();
+      return parkingObj;
+    });
+
     res.status(200).json({
       success: true,
-      count: activeParkings.length,
-      data: activeParkings
+      count: activeParkingsWithCustomer.length,
+      data: activeParkingsWithCustomer
     });
   } catch (error) {
     next(error);
@@ -281,6 +304,8 @@ const searchParkingByVehicleNumber = async (req, res, next) => {
   try {
     const { vehicleNumber } = req.query;
     
+    console.log('Search request received:', { vehicleNumber, userStand: req.user.stand });
+    
     if (!vehicleNumber) {
       return res.status(400).json({
         success: false,
@@ -288,18 +313,81 @@ const searchParkingByVehicleNumber = async (req, res, next) => {
       });
     }
 
+    // Remove any spaces and convert to uppercase for consistent search
+    const cleanVehicleNumber = vehicleNumber.replace(/\s+/g, '').toUpperCase();
+    console.log('Cleaned search term:', cleanVehicleNumber);
+    console.log('User stand:', req.user.stand);
+
     const parkings = await Parking.find({
-      vehicleNumber: { $regex: vehicleNumber, $options: 'i' },
-      stand: req.user.stand,
-      status: 'active'
+      vehicleNumber: { $regex: cleanVehicleNumber, $options: 'i' },
+      stand: req.user.stand
+      // Remove status filter to search all vehicles
     })
     .populate('staff', 'name')
     .sort({ createdAt: -1 });
+    
+    console.log('Found parkings:', parkings.length);
+    if (parkings.length > 0) {
+      console.log('Parking details:', parkings.map(p => ({ 
+        id: p._id, 
+        vehicleNumber: p.vehicleNumber, 
+        status: p.status,
+        stand: p.stand
+      })));
+    }
 
     res.status(200).json({
       success: true,
       count: parkings.length,
       data: parkings
+    });
+  } catch (error) {
+    console.error('Search error:', error);
+    next(error);
+  }
+};
+
+// @desc    Get all parkings
+// @route   GET /api/parkings
+// @access  Private (Admin roles)
+const getAllParkings = async (req, res, next) => {
+  try {
+    // For super admin, get all parkings
+    // For stand admin, get parkings from their stand
+    // For staff, get parkings from their stand
+    let query = {};
+    
+    // Validate that non-super-admin users have a stand
+    if (req.user.role === 'stand_admin' || req.user.role === 'staff') {
+      // Check if stand is populated or just an ID
+      const standId = req.user.stand ? (req.user.stand._id || req.user.stand) : null;
+      
+      if (!standId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User must be assigned to a stand'
+        });
+      }
+      query.stand = standId;
+    }
+    
+    const parkings = await Parking.find(query)
+      .populate('staff', 'name email')
+      .populate('stand', 'name location')
+      .sort({ createdAt: -1 });
+
+    // Add customer details if they exist in the parking document
+    const parkingsWithCustomer = parkings.map(parking => {
+      const parkingObj = parking.toObject();
+      // If customer details are stored in the parking document, include them
+      // Otherwise, they'll be undefined which is handled in the frontend
+      return parkingObj;
+    });
+
+    res.status(200).json({
+      success: true,
+      count: parkingsWithCustomer.length,
+      data: parkingsWithCustomer
     });
   } catch (error) {
     next(error);
@@ -313,5 +401,6 @@ module.exports = {
   getTodayParking,
   getActiveParkings,
   getParkingByToken,
-  searchParkingByVehicleNumber
+  searchParkingByVehicleNumber,
+  getAllParkings
 };

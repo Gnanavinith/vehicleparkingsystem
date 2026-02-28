@@ -1,0 +1,17 @@
+{
+  "cycle": {
+    "firstHourRate": 5,
+    "additionalHourRate": 3
+  },
+  "bike": {
+    "firstHourRate": 11,
+    "additionalHourRate": 5
+  },
+  "car": {
+    "firstHourRate": 20,
+    "additionalHourRate": 10
+  },
+  "gracePeriod": 15,
+  "currency": "INR",
+  "taxRate": 0
+}

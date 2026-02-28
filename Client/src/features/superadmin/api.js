@@ -1,40 +1,38 @@
 import api from '../../config/axios';
 
-export const getVehicleStands = async () => {
-  const response = await api.get('/vehicle-stands');
-  return response.data;
+// Pricing API functions
+export const getPricing = async () => {
+  try {
+    const response = await api.get('/pricing');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching pricing:', error);
+    throw error;
+  }
 };
 
-export const createVehicleStand = async (data) => {
-  const response = await api.post('/vehicle-stands', data);
-  return response.data;
+export const updatePricing = async (pricingData) => {
+  try {
+    const response = await api.put('/pricing', pricingData);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error updating pricing:', error);
+    throw error;
+  }
 };
 
-export const updateVehicleStand = async (id, data) => {
-  const response = await api.put(`/vehicle-stands/${id}`, data);
-  return response.data;
-};
-
-export const deleteVehicleStand = async (id) => {
-  const response = await api.delete(`/vehicle-stands/${id}`);
-  return response.data;
-};
-
-export const getStandAdmins = async () => {
-  const response = await api.get('/users?role=stand_admin');
-  return response.data;
-};
-
-export const createStandAdmin = async (data) => {
-  const response = await api.post('/users', data);
-  return response.data;
+export const getVehiclePricing = async (vehicleType) => {
+  try {
+    const response = await api.get(`/pricing/${vehicleType}`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching vehicle pricing:', error);
+    throw error;
+  }
 };
 
 export default {
-  getVehicleStands,
-  createVehicleStand,
-  updateVehicleStand,
-  deleteVehicleStand,
-  getStandAdmins,
-  createStandAdmin,
+  getPricing,
+  updatePricing,
+  getVehiclePricing
 };

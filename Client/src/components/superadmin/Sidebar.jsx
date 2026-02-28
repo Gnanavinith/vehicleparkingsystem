@@ -1,236 +1,173 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../redux/slices/authSlice';
-import { FaHome, FaBuilding, FaUsers, FaChartBar, FaDollarSign, FaCog, FaSignOutAlt } from 'react-icons/fa';
-
-/* ── Inline styles (no Tailwind dependency) ── */
-const S = {
-  sidebar: {
-    width: 240, height: '100vh', background: '#ffffff',
-    borderRight: '1px solid #e2e8f0',
-    display: 'flex', flexDirection: 'column',
-    position: 'fixed', left: 0, top: 0, zIndex: 50,
-    fontFamily: "'DM Sans', sans-serif",
-    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)'
-  },
-  header: {
-    padding: '18px 14px 14px',
-    borderBottom: '1px solid #e2e8f0',
-    display: 'flex', alignItems: 'center', gap: 10,
-  },
-  logoMark: {
-    width: 32, height: 32, borderRadius: 9,
-    background: '#6366f1', display: 'flex',
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    boxShadow: '0 1px 3px 0 rgba(99, 102, 241, 0.3)'
-  },
-  brandName: {
-    fontSize: 13.5, fontWeight: 700, color: '#1e293b',
-    letterSpacing: '-0.02em', lineHeight: 1.2,
-  },
-  chip: {
-    display: 'inline-flex', alignItems: 'center',
-    fontSize: 9.5, fontWeight: 600, letterSpacing: '0.03em',
-    padding: '2px 7px', borderRadius: 20, marginTop: 3,
-    background: 'rgba(99,102,241,0.1)', color: '#6366f1',
-    fontFamily: "'DM Mono', monospace",
-  },
-  nav: {
-    flex: 1, overflowY: 'auto', padding: '10px 8px',
-    background: '#ffffff'
-  },
-  sectionLabel: {
-    display: 'block', fontSize: 9.5, fontWeight: 700,
-    letterSpacing: '0.09em', textTransform: 'uppercase',
-    color: '#94a3b8', padding: '0 11px', margin: '14px 0 3px',
-  },
-  footer: {
-    padding: '10px 8px',
-    borderTop: '1px solid #e2e8f0',
-    background: '#ffffff'
-  },
-  userRow: {
-    display: 'flex', alignItems: 'center', gap: 10,
-    padding: '7px 11px', marginBottom: 4,
-    background: '#f8fafc', borderRadius: 10,
-    border: '1px solid #e2e8f0'
-  },
-  avatar: {
-    width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 11, fontWeight: 700, fontFamily: "'DM Mono', monospace",
-    background: 'rgba(99,102,241,0.1)', color: '#6366f1',
-    border: '1px solid rgba(99,102,241,0.2)'
-  },
-  userName: { fontSize: 12.5, fontWeight: 600, color: '#1e293b', lineHeight: 1.3 },
-  userSub: {
-    fontSize: 10.5, color: '#64748b',
-    display: 'flex', alignItems: 'center', gap: 5,
-  },
-  liveDot: {
-    width: 6, height: 6, borderRadius: '50%',
-    background: '#34d399', flexShrink: 0,
-    animation: 'pulse 2s infinite',
-  },
-};
+import { FaHome, FaBuilding, FaChartBar, FaDollarSign, FaCog, FaSignOutAlt } from 'react-icons/fa';
 
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-  .sa-sidebar { animation: fadeUp 0.3s ease; }
-  .sa-nav::-webkit-scrollbar { width: 3px; }
-  .sa-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
-  .sa-nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 9px 11px; border-radius: 10px;
-    font-size: 13px; font-weight: 500; color: #64748b;
-    text-decoration: none; transition: all 0.18s ease;
-    position: relative; white-space: nowrap; width: 100%;
-    border: none; background: transparent; cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; }
+
+  @keyframes sf-in  { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:none} }
+  @keyframes blink  { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .sa-root { animation: sf-in .28s cubic-bezier(.22,1,.36,1); font-family:'DM Sans',sans-serif; }
+
+  .pn {
+    display:flex; align-items:center; gap:10px;
+    padding:9px 14px; border-radius:100px;
+    text-decoration:none; border:none; background:transparent;
+    cursor:pointer; transition:background .13s; width:100%;
+    font-family:'DM Sans',sans-serif; position:relative;
   }
-  .sa-nav-item:hover { background: #f1f5f9; color: #475569; }
-  .sa-nav-item.active {
-    background: rgba(99,102,241,0.1); color: #6366f1;
+  .pn:hover { background:#f0f0f0; }
+  .pn.pn-active { background:#0a0a0a; }
+  .pn .pn-label { font-size:13px; font-weight:600; color:#555; transition:color .13s; flex:1; text-align:left; }
+  .pn.pn-active .pn-label { color:#fff; }
+  .pn .pn-icon { color:#aaa; transition:color .13s; display:flex; align-items:center; }
+  .pn.pn-active .pn-icon { color:rgba(255,255,255,.6); }
+  .pn .pn-live {
+    font-size:8.5px; font-weight:700; letter-spacing:.07em;
+    padding:1px 6px; border-radius:3px;
+    background:#0a0a0a; color:#fff;
+    font-family:'DM Mono',monospace; text-transform:uppercase;
   }
-  .sa-nav-item.active svg { stroke: #6366f1; }
-  .sa-nav-item.active::before {
-    content: ''; position: absolute; left: 0; top: 50%;
-    transform: translateY(-50%); width: 3px; height: 58%;
-    background: #6366f1; border-radius: 0 3px 3px 0;
-  }
-  .sa-nav-item.danger:hover { background: #fee2e2; color: #ef4444; }
-  .sa-nav-item.danger:hover svg { stroke: #ef4444; }
-  .sa-badge {
-    margin-left: auto; font-size: 10px; font-weight: 600;
-    padding: 1px 6px; border-radius: 20px;
-    background: rgba(52,211,153,0.1); color: #059669;
-    font-family: 'DM Mono', monospace;
-  }
+  .pn.pn-active .pn-live { background:rgba(255,255,255,.2); color:#fff; }
+  .pn-danger:hover { background:#fff0f0; }
+  .pn-danger:hover .pn-label { color:#cc0000; }
+  .pn-danger:hover .pn-icon { color:#cc0000; }
 `;
 
-const NavIcon = ({ icon: Icon, badge }) => (
-  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <Icon size={15} />
-    {badge && (
-      <span style={{
-        position: 'absolute',
-        top: '-5px',
-        right: '-8px',
-        background: '#34d399',
-        color: 'white',
-        fontSize: '9px',
-        fontWeight: '600',
-        minWidth: '16px',
-        height: '16px',
-        borderRadius: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0 4px',
-        fontFamily: "'DM Mono', monospace"
-      }}>
-        {badge}
-      </span>
-    )}
-  </div>
-);
-
-const MENU = [
+const NAV_SECTIONS = [
   {
-    section: 'Management',
+    label: 'Management',
     items: [
-      { title: 'Dashboard',     path: '/superadmin/dashboard', icon: FaHome },
-      { title: 'Vehicle Stands',path: '/superadmin/stands',    icon: FaBuilding },
+      { title:'Dashboard',      path:'/superadmin/dashboard', icon:FaHome },
+      { title:'Vehicle Stands', path:'/superadmin/stands',    icon:FaBuilding },
     ],
   },
   {
-    section: 'Analytics',
+    label: 'Analytics',
     items: [
-      { title: 'Reports', path: '/superadmin/reports', badge: 'Live', icon: FaChartBar },
+      { title:'Reports', path:'/superadmin/reports', icon:FaChartBar, live:true },
     ],
   },
   {
-    section: 'System',
+    label: 'System',
     items: [
-      { title: 'Pricing',  path: '/superadmin/pricing',  icon: FaDollarSign },
-      { title: 'Settings', path: '/superadmin/settings', icon: FaCog },
+      { title:'Pricing',  path:'/superadmin/pricing',  icon:FaDollarSign },
+      { title:'Settings', path:'/superadmin/settings', icon:FaCog },
     ],
   },
 ];
 
-const SuperAdminSidebar = () => {
+const LiveClock = () => {
+  const [time, setTime] = useState(() =>
+    new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true })
+  );
+  useEffect(() => {
+    const t = setInterval(() =>
+      setTime(new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true }))
+    , 1000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div style={{
+      marginTop:14, display:'inline-flex', alignItems:'center', gap:8,
+      background:'#0a0a0a', borderRadius:6, padding:'5px 10px 5px 8px',
+    }}>
+      <span style={{ width:6, height:6, borderRadius:'50%', background:'#4ade80', flexShrink:0, boxShadow:'0 0 0 3px rgba(74,222,128,.2)' }} />
+      <span style={{ fontFamily:"'DM Mono',monospace", fontSize:10.5, color:'#e5e5e5', letterSpacing:'.04em' }}>{time}</span>
+      <span style={{ fontFamily:"'DM Mono',monospace", fontSize:9, color:'#555', letterSpacing:'.06em', textTransform:'uppercase' }}>System</span>
+    </div>
+  );
+};
+
+export default function SuperAdminSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const isActive = (p) => location.pathname === p;
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
+  const isActive = p => location.pathname === p;
+  const handleLogout = () => { dispatch(logout()); navigate('/login'); };
 
   return (
     <>
       <style>{css}</style>
-      <aside style={S.sidebar} className="sa-sidebar">
+      <aside className="sa-root" style={{
+        width:240, height:'100vh', background:'#fff',
+        borderRight:'1px solid #e5e5e5',
+        display:'flex', flexDirection:'column',
+        position:'fixed', left:0, top:0, zIndex:50,
+      }}>
 
-        {/* Header */}
-        <div style={S.header}>
-          <div style={S.logoMark}>
-            <svg width="17" height="17" fill="none" stroke="#fff" strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-            </svg>
+        {/* Masthead */}
+        <div style={{ padding:'22px 20px 18px', borderBottom:'1px solid #e5e5e5' }}>
+          <div style={{
+            fontFamily:"'DM Serif Display',serif",
+            fontSize:22, letterSpacing:'-0.02em', color:'#0a0a0a',
+            lineHeight:1, marginBottom:3, fontStyle:'italic',
+          }}>
+            Parking<span style={{ fontStyle:'normal', fontSize:18 }}>Pro</span>
           </div>
-          <div>
-            <div style={S.brandName}>ParkingPro</div>
-            <span style={S.chip}>Super Admin</span>
+          <div style={{
+            fontFamily:"'DM Mono',monospace", fontSize:9, fontWeight:600,
+            letterSpacing:'.12em', textTransform:'uppercase', color:'#bbb',
+          }}>
+            Super Admin
           </div>
+          <LiveClock />
         </div>
 
         {/* Nav */}
-        <nav style={S.nav} className="sa-nav">
-          {MENU.map(({ section, items }) => (
-            <React.Fragment key={section}>
-              <span style={S.sectionLabel}>{section}</span>
-              {items.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`sa-nav-item${isActive(item.path) ? ' active' : ''}`}
-                >
-                  <NavIcon icon={item.icon} badge={item.badge} />
-                  {item.title}
+        <nav style={{ flex:1, overflowY:'auto', padding:'12px 10px' }}>
+          {NAV_SECTIONS.map(({ label, items }) => (
+            <React.Fragment key={label}>
+              <div style={{
+                padding:'12px 14px 6px',
+                fontFamily:"'DM Mono',monospace", fontSize:8.5, fontWeight:600,
+                letterSpacing:'.14em', textTransform:'uppercase', color:'#c0c0c0',
+              }}>
+                {label}
+              </div>
+              {items.map(item => (
+                <Link key={item.path} to={item.path} className={`pn${isActive(item.path) ? ' pn-active' : ''}`}>
+                  <span className="pn-icon"><item.icon size={13} /></span>
+                  <span className="pn-label">{item.title}</span>
+                  {item.live && <span className="pn-live">Live</span>}
                 </Link>
               ))}
             </React.Fragment>
           ))}
         </nav>
 
+        <div style={{ margin:'0 20px', height:1, background:'#e5e5e5' }} />
+
         {/* Footer */}
-        <div style={S.footer}>
-          <div style={S.userRow}>
-            <div style={S.avatar}>SA</div>
-            <div>
-              <div style={S.userName}>Super Admin</div>
-              <div style={S.userSub}>
-                <span style={S.liveDot} />
-                System active
+        <div style={{ padding:'12px 10px 14px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'6px 14px 10px' }}>
+            <div style={{
+              width:30, height:30, borderRadius:'50%',
+              background:'#0a0a0a', color:'#fff',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontFamily:"'DM Mono',monospace", fontSize:11, fontWeight:600,
+              flexShrink:0, letterSpacing:'.04em',
+            }}>SA</div>
+            <div style={{ minWidth:0 }}>
+              <div style={{ fontSize:12.5, fontWeight:700, color:'#0a0a0a', fontFamily:"'DM Sans',sans-serif" }}>
+                Super Admin
+              </div>
+              <div style={{ fontSize:10, color:'#aaa', fontFamily:"'DM Mono',monospace" }}>
+                admin@parkingpro
               </div>
             </div>
           </div>
-          <button onClick={handleLogout} className="sa-nav-item danger">
-            <NavIcon icon={FaSignOutAlt} />
-            Sign out
+          <button onClick={handleLogout} className="pn pn-danger" style={{ width:'100%' }}>
+            <span className="pn-icon"><FaSignOutAlt size={13} /></span>
+            <span className="pn-label">Sign out</span>
           </button>
         </div>
 
       </aside>
     </>
   );
-};
-
-export default SuperAdminSidebar;
+}

@@ -65,7 +65,9 @@ const DataTable = ({
                 >
                   {column.render
                     ? column.render(row[column.key], row)
-                    : row[column.key]}
+                    : (row[column.key] == null || isNaN(row[column.key])) 
+                      ? String(row[column.key]) 
+                      : row[column.key]}
                 </td>
               ))}
             </tr>

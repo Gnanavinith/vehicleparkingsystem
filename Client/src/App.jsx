@@ -37,8 +37,11 @@ import PricingSettings from './features/standadmin/pages/PricingSettings';
 // Staff Pages
 import StaffDashboard from './features/staff/pages/Dashboard';
 import StaffProfile from './features/staff/pages/Profile';
-import NewParking from './features/staff/pages/NewParking';
+import CycleEntry from './features/staff/pages/CycleEntry';
+import BikeEntry from './features/staff/pages/BikeEntry';
+import CarEntry from './features/staff/pages/CarEntry';
 import Checkout from './features/staff/pages/Checkout';
+import Paid from './features/staff/pages/Paid';
 import TodayList from './features/staff/pages/TodayList';
 
 function App() {
@@ -97,8 +100,12 @@ function App() {
               }
             >
               <Route path="/staff/dashboard" element={<StaffDashboard />} />
-              <Route path="/staff/new-parking" element={<NewParking />} />
+              <Route path="/staff/new-parking/cycle" element={<CycleEntry />} />
+              <Route path="/staff/new-parking/bike" element={<BikeEntry />} />
+              <Route path="/staff/new-parking/car" element={<CarEntry />} />
               <Route path="/staff/checkout" element={<Checkout />} />
+              <Route path="/staff/checkout/:id" element={<Checkout />} />
+              <Route path="/staff/paid" element={<Paid />} />
               <Route path="/staff/today-list" element={<TodayList />} />
               <Route path="/staff/profile" element={<StaffProfile />} />
             </Route>

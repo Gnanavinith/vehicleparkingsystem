@@ -110,7 +110,7 @@ const Shimmer = ({ h = 14, w = '100%' }) => (
 );
 
 const calcAmount = (p, pricing) => {
-  const checkoutDate = new Date(p.checkoutTime);
+  const checkoutDate = new Date(p.outTime);
   const createdDate = new Date(p.createdAt);
   if (isNaN(checkoutDate.getTime()) || isNaN(createdDate.getTime())) return 0;
   const hours = Math.max(1, Math.floor((checkoutDate - createdDate) / 3600000));
@@ -252,12 +252,12 @@ export default function Paid() {
                 </thead>
                 <tbody>
                   {[...filtered]
-                    .sort((a, b) => new Date(b.checkoutTime) - new Date(a.checkoutTime))
+                    .sort((a, b) => new Date(b.outTime) - new Date(a.outTime))
                     .map(p => {
                       const Icon = VEHICLE_ICONS[p.vehicleType] || FaCar;
                       const color = VEHICLE_COLORS[p.vehicleType] || '#555';
                       const amount = calcAmount(p, standPricing);
-                      const checkoutDate = new Date(p.checkoutTime);
+                      const checkoutDate = new Date(p.outTime);
                       const validDate = !isNaN(checkoutDate.getTime());
 
                       return (

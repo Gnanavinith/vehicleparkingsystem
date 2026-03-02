@@ -133,7 +133,7 @@ const css = `
   }
   .vs-table .col-name     { width: 34%; }
   .vs-table .col-capacity { width: 13%; }
-  .vs-table .col-rate     { width: 14%; }
+  .vs-table .col-rate     { width: 20%; }
   .vs-table .col-admin    { width: 19%; }
   .vs-table .col-status   { width: 14%; }
   .vs-table .col-actions  { width: 6%;  }
@@ -208,7 +208,7 @@ const VehicleStands = () => {
         name:       s.name,
         location:   s.location,
         capacity:   s.capacity || 0,
-        hourlyRate: s.hourlyRate || 0,
+        pricing: s.pricing || { cycle: 0, bike: 0, car: 0 },
         currency:   s.currency || 'INR',
         admin:      s.admin ? s.admin.name : 'Unassigned',
         status:     s.isActive ? 'Active' : 'Inactive',
@@ -225,7 +225,7 @@ const VehicleStands = () => {
 
   const totalCapacity = stands?.reduce((s, x) => s + x.capacity, 0) || 0;
   const activeCount   = stands?.filter(s => s.status === 'Active').length || 0;
-  const avgRate       = stands?.length ? (stands.reduce((s, x) => s + x.hourlyRate, 0) / stands.length).toFixed(2) : '0.00';
+  const avgRate       = stands?.length ? (stands.reduce((s, x) => s + ((x.pricing?.cycle || 0) + (x.pricing?.bike || 0) + (x.pricing?.car || 0)) / 3, 0) / stands.length).toFixed(2) : '0.00';
   const sym           = CURRENCY_SYMBOLS[stands?.[0]?.currency] || '₹';
 
   const filtered = (stands || []).filter(s =>
@@ -284,7 +284,7 @@ const VehicleStands = () => {
           <KPI label="Total Stands"    value={stands?.length || 0}                  icon={HiOutlineBuildingOffice2} color="#1d4ed8" />
           <KPI label="Active Stands"   value={activeCount}                           icon={MdOutlineCheckCircle}     color="#059669" />
           <KPI label="Total Capacity"  value={totalCapacity.toLocaleString('en-IN')} icon={BsPeopleFill}             color="#d97706" />
-          <KPI label="Avg Hourly Rate" value={`${sym}${avgRate}`}                   icon={MdOutlineSpeed}           color="#7c3aed" />
+          <KPI label="Avg Pricing" value={`${sym}${avgRate}`}                   icon={MdOutlineSpeed}           color="#7c3aed" />
         </div>
 
         {/* Table Card */}
@@ -322,7 +322,7 @@ const VehicleStands = () => {
               <tr>
                 <th>Stand Name</th>
                 <th>Capacity</th>
-                <th>Rate</th>
+                <th>Pricing (CYC/BIKE/CAR)</th>
                 <th>Admin</th>
                 <th>Status</th>
                 <th />
@@ -357,10 +357,17 @@ const VehicleStands = () => {
 
                         {/* Rate */}
                         <td>
-                          <span style={{ fontFamily: 'DM Serif Display, serif', fontSize: 15, color: '#059669' }}>
-                            {CURRENCY_SYMBOLS[row.currency] || '₹'}{row.hourlyRate.toFixed(2)}
-                          </span>
-                          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: '#ccc', marginLeft: 3 }}>/hr</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span style={{ fontFamily: 'DM Serif Display, serif', fontSize: 12, color: '#059669' }}>
+                              CYC: {CURRENCY_SYMBOLS[row.currency] || '₹'}{row.pricing?.cycle?.toFixed(2) || '0.00'}
+                            </span>
+                            <span style={{ fontFamily: 'DM Serif Display, serif', fontSize: 12, color: '#059669' }}>
+                              BIKE: {CURRENCY_SYMBOLS[row.currency] || '₹'}{row.pricing?.bike?.toFixed(2) || '0.00'}
+                            </span>
+                            <span style={{ fontFamily: 'DM Serif Display, serif', fontSize: 12, color: '#059669' }}>
+                              CAR: {CURRENCY_SYMBOLS[row.currency] || '₹'}{row.pricing?.car?.toFixed(2) || '0.00'}
+                            </span>
+                          </div>
                         </td>
 
                         {/* Admin */}

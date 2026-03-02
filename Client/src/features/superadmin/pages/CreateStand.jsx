@@ -8,7 +8,13 @@ import { HiOutlineBuildingOffice2 } from 'react-icons/hi2';
 import { MdOutlineAdminPanelSettings, MdOutlineLocationOn, MdOutlinePhone } from 'react-icons/md';
 import { RiParkingBoxLine } from 'react-icons/ri';
 import { BsPersonFill, BsInfoCircleFill } from 'react-icons/bs';
-import { FaEnvelope, FaLock, FaPlus } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaPlus, FaMoneyBillWave } from 'react-icons/fa';
+
+// ─── Currency Symbols ──────────────────────────────────────────────────────────
+const CURRENCY_SYMBOLS = {
+  USD: '$', EUR: '€', GBP: '£', INR: '₹', JPY: '¥',
+  CAD: 'C$', AUD: 'A$', CHF: 'CHF', CNY: '¥', SGD: 'S$',
+};
 
 // ─── Tokens ────────────────────────────────────────────────────────────────────
 const C = {
@@ -75,6 +81,44 @@ const Input = ({ icon: Icon, error, ...props }) => (
   </div>
 );
 
+// ─── Select with optional icon ────────────────────────────────────────────────
+const Select = ({ icon: Icon, error, children, ...props }) => (
+  <div style={{ position: 'relative' }}>
+    {Icon && (
+      <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1 }}>
+        <Icon style={{ color: C.muted, fontSize: 14 }} />
+      </div>
+    )}
+    <select
+      {...props}
+      style={{
+        width: '100%', fontFamily: 'Inter, sans-serif',
+        padding: `9px 34px 9px ${Icon ? '34px' : '12px'}`,
+        border: `1.5px solid ${error ? C.red : C.border}`,
+        borderRadius: 9, fontSize: 13.5, color: C.text,
+        background: C.card, outline: 'none', appearance: 'none',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+      }}
+      onFocus={e => {
+        e.target.style.borderColor = error ? C.red : C.borderFocus;
+        e.target.style.boxShadow = `0 0 0 3px ${error ? '#fee2e2' : C.accentLight}`;
+      }}
+      onBlur={e => {
+        e.target.style.borderColor = error ? C.red : C.border;
+        e.target.style.boxShadow = 'none';
+      }}
+    >
+      {children}
+    </select>
+    {/* chevron */}
+    <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: C.muted }}>
+      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    </div>
+  </div>
+);
+
 // ─── Section Card ──────────────────────────────────────────────────────────────
 const SectionCard = ({ title, subtitle, Icon, iconBg, iconColor, children }) => (
   <div style={{
@@ -109,6 +153,10 @@ const CreateStand = () => {
     standName: '',
     contactNumber: '',
     location: '',
+    capacity: '',
+    pricing: { cycle: 5, bike: 10, car: 20 },
+    currency: 'INR',
+    description: '',
     adminName: '',
     adminEmail: '',
     adminPassword: '',
@@ -122,12 +170,17 @@ const CreateStand = () => {
         name: standData.standName,
         contactNumber: standData.contactNumber,
         location: standData.location,
+        capacity: parseInt(standData.capacity) || 1,
+        pricing: {
+          cycle: parseFloat(standData.pricing.cycle) || 5,
+          bike: parseFloat(standData.pricing.bike) || 10,
+          car: parseFloat(standData.pricing.car) || 20
+        },
+        currency: standData.currency || 'INR',
+        description: standData.description || 'New stand created by super admin',
         adminName: standData.adminName,
         adminEmail: standData.adminEmail,
         adminPassword: standData.adminPassword,
-        capacity: 1,
-        hourlyRate: 1.0,
-        description: 'New stand created by super admin',
       };
       const response = await api.post('/stands', payload);
       return response.data;
@@ -141,13 +194,34 @@ const CreateStand = () => {
     },
   });
 
-  const handleChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = e => {
+    const { name, value } = e.target;
+    
+    // Handle nested pricing fields
+    if (name.startsWith('pricing.')) {
+      const pricingField = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        pricing: {
+          ...prev.pricing,
+          [pricingField]: parseFloat(value) || 0
+        }
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
 
   const validate = () => {
     const errs = {};
     if (!formData.standName.trim()) errs.standName = 'Stand name is required';
     if (!formData.contactNumber.trim()) errs.contactNumber = 'Contact number is required';
     if (!formData.location.trim()) errs.location = 'Location is required';
+    if (!formData.capacity || formData.capacity <= 0) errs.capacity = 'Must be greater than 0';
+    if (!formData.pricing || formData.pricing.cycle === undefined || formData.pricing.cycle < 0) errs.cycleRate = 'Must be 0 or greater';
+    if (!formData.pricing || formData.pricing.bike === undefined || formData.pricing.bike < 0) errs.bikeRate = 'Must be 0 or greater';
+    if (!formData.pricing || formData.pricing.car === undefined || formData.pricing.car < 0) errs.carRate = 'Must be 0 or greater';
+    if (!formData.currency) errs.currency = 'Currency is required';
     if (!formData.adminName.trim()) errs.adminName = 'Admin name is required';
     if (!formData.adminEmail.trim()) errs.adminEmail = 'Admin email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.adminEmail)) errs.adminEmail = 'Invalid email address';
@@ -165,7 +239,24 @@ const CreateStand = () => {
 
   // Progress indicator — how many fields filled
   const totalFields = Object.keys(formData).length;
-  const filledFields = Object.values(formData).filter(v => v.trim().length > 0).length;
+  const filledFields = Object.values(formData).filter(v => {
+    if (v === null || v === undefined) return false;
+
+    if (typeof v === 'object') {
+      // pricing object - check if any rates are set
+      return Object.values(v).some(rate => Number(rate) > 0);
+    }
+
+    if (typeof v === 'string') {
+      return v.trim().length > 0;
+    }
+
+    if (typeof v === 'number') {
+      return v > 0;
+    }
+
+    return false;
+  }).length;
   const progress = Math.round((filledFields / totalFields) * 100);
 
   return (
@@ -220,16 +311,197 @@ const CreateStand = () => {
             <Field label="Location" required error={errors.location}>
               <Input icon={MdOutlineLocationOn} name="location" value={formData.location} onChange={handleChange} placeholder="e.g. 123 Main St, Downtown" error={errors.location} />
             </Field>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <Field label="Capacity" required error={errors.capacity}>
+                <Input icon={RiParkingBoxLine} name="capacity" type="number" min="1" value={formData.capacity} onChange={handleChange} placeholder="e.g. 100" error={errors.capacity} />
+              </Field>
+              <Field label="Currency" required error={errors.currency}>
+                <Select icon={FaMoneyBillWave} name="currency" value={formData.currency} onChange={handleChange} error={errors.currency}>
+                  <option value="USD">USD — $</option>
+                  <option value="EUR">EUR — €</option>
+                  <option value="GBP">GBP — £</option>
+                  <option value="INR">INR — ₹</option>
+                  <option value="JPY">JPY — ¥</option>
+                  <option value="CAD">CAD — C$</option>
+                  <option value="AUD">AUD — A$</option>
+                  <option value="CHF">CHF</option>
+                  <option value="CNY">CNY — ¥</option>
+                  <option value="SGD">SGD — S$</option>
+                </Select>
+              </Field>
+            </div>
+            
+            {/* Currency pill */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span style={{
+                fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 600,
+                background: C.accentLight, color: C.accent,
+                padding: '3px 10px', borderRadius: 20,
+              }}>
+                {formData.currency} · {CURRENCY_SYMBOLS[formData.currency] || '₹'}
+              </span>
+            </div>
+            
+            {/* Vehicle-specific pricing */}
+            <div style={{ 
+              background: C.accentLight, 
+              border: `1px solid ${C.border}`, 
+              borderRadius: 10, 
+              padding: 16,
+              marginTop: 8
+            }}>
+              <div style={{ 
+                fontSize: 11, 
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                color: C.accent, 
+                marginBottom: 12 
+              }}>
+                Vehicle Pricing
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <Field label="Cycle" error={errors.cycleRate}>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1, fontSize: 14, color: errors.cycleRate ? C.red : C.muted }}>
+                      {CURRENCY_SYMBOLS[formData.currency] || '₹'}
+                    </div>
+                    <input
+                      style={{
+                        width: '100%', fontFamily: 'Inter, sans-serif',
+                        padding: '9px 12px 9px 34px',
+                        border: `1.5px solid ${errors.cycleRate ? C.red : C.border}`,
+                        borderRadius: 9, fontSize: 13.5, color: C.text,
+                        background: C.card, outline: 'none',
+                        transition: 'border-color 0.15s, box-shadow 0.15s',
+                      }}
+                      name="pricing.cycle"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.pricing.cycle}
+                      onChange={handleChange}
+                      placeholder="5.00"
+                      onFocus={e => {
+                        e.target.style.borderColor = errors.cycleRate ? C.red : C.borderFocus;
+                        e.target.style.boxShadow = `0 0 0 3px ${errors.cycleRate ? '#fee2e2' : C.accentLight}`;
+                      }}
+                      onBlur={e => {
+                        e.target.style.borderColor = errors.cycleRate ? C.red : C.border;
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+                </Field>
+                
+                <Field label="Bike" error={errors.bikeRate}>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1, fontSize: 14, color: errors.bikeRate ? C.red : C.muted }}>
+                      {CURRENCY_SYMBOLS[formData.currency] || '₹'}
+                    </div>
+                    <input
+                      style={{
+                        width: '100%', fontFamily: 'Inter, sans-serif',
+                        padding: '9px 12px 9px 34px',
+                        border: `1.5px solid ${errors.bikeRate ? C.red : C.border}`,
+                        borderRadius: 9, fontSize: 13.5, color: C.text,
+                        background: C.card, outline: 'none',
+                        transition: 'border-color 0.15s, box-shadow 0.15s',
+                      }}
+                      name="pricing.bike"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.pricing.bike}
+                      onChange={handleChange}
+                      placeholder="10.00"
+                      onFocus={e => {
+                        e.target.style.borderColor = errors.bikeRate ? C.red : C.borderFocus;
+                        e.target.style.boxShadow = `0 0 0 3px ${errors.bikeRate ? '#fee2e2' : C.accentLight}`;
+                      }}
+                      onBlur={e => {
+                        e.target.style.borderColor = errors.bikeRate ? C.red : C.border;
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+                </Field>
+                
+                <Field label="Car" error={errors.carRate}>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1, fontSize: 14, color: errors.carRate ? C.red : C.muted }}>
+                      {CURRENCY_SYMBOLS[formData.currency] || '₹'}
+                    </div>
+                    <input
+                      style={{
+                        width: '100%', fontFamily: 'Inter, sans-serif',
+                        padding: '9px 12px 9px 34px',
+                        border: `1.5px solid ${errors.carRate ? C.red : C.border}`,
+                        borderRadius: 9, fontSize: 13.5, color: C.text,
+                        background: C.card, outline: 'none',
+                        transition: 'border-color 0.15s, box-shadow 0.15s',
+                      }}
+                      name="pricing.car"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.pricing.car}
+                      onChange={handleChange}
+                      placeholder="20.00"
+                      onFocus={e => {
+                        e.target.style.borderColor = errors.carRate ? C.red : C.borderFocus;
+                        e.target.style.boxShadow = `0 0 0 3px ${errors.carRate ? '#fee2e2' : C.accentLight}`;
+                      }}
+                      onBlur={e => {
+                        e.target.style.borderColor = errors.carRate ? C.red : C.border;
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+                </Field>
+              </div>
+            </div>
+            
             <Field label="Contact Number" required error={errors.contactNumber}>
               <Input icon={MdOutlinePhone} name="contactNumber" type="tel" value={formData.contactNumber} onChange={handleChange} placeholder="e.g. +1 555-000-0000" error={errors.contactNumber} />
             </Field>
+            
+            <Field label="Description">
+              <textarea
+                style={{
+                  width: '100%', fontFamily: 'Inter, sans-serif',
+                  padding: '9px 12px',
+                  border: `1.5px solid ${C.border}`,
+                  borderRadius: 9, fontSize: 13.5, color: C.text,
+                  background: C.card, outline: 'none',
+                  transition: 'border-color 0.15s, box-shadow 0.15s',
+                  minHeight: 80, resize: 'vertical',
+                }}
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Describe the stand, facilities, access info…"
+                onFocus={e => {
+                  e.target.style.borderColor = C.borderFocus;
+                  e.target.style.boxShadow = `0 0 0 3px ${C.accentLight}`;
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = C.border;
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+            </Field>
 
             {/* Info notice */}
-            <div style={{ background: C.accentLight, border: '1px solid #c7d2fe', borderRadius: 10, padding: '13px 15px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <div style={{ background: C.accentLight, border: `1px solid ${C.border}`, borderRadius: 10, padding: '13px 15px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <BsInfoCircleFill style={{ color: C.accent, fontSize: 14, flexShrink: 0, marginTop: 1 }} />
-              <p style={{ fontSize: 12, color: '#4338ca', margin: 0, lineHeight: 1.55 }}>
-                Capacity and hourly rate can be configured after creation from the stand's edit page.
-              </p>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 600, color: C.accent, margin: '0 0 3px' }}>Pricing Configuration</p>
+                <p style={{ fontSize: 12, color: '#4338ca', margin: 0, lineHeight: 1.55 }}>
+                  Set default pricing for cycle, bike, and car parking. These can be adjusted later from the stand's edit page.
+                </p>
+              </div>
             </div>
           </SectionCard>
 

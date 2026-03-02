@@ -111,11 +111,12 @@ const checkoutParkingById = async (req, res, next) => {
     
     // Calculate amount
     const stand = await Stand.findById(req.user.stand);
+    const vehicleRate = stand.pricing[parking.vehicleType];
     parking.amount = calculateAmount(
       parking.inTime, 
       parking.outTime, 
       parking.vehicleType, 
-      stand.hourlyRate
+      vehicleRate
     );
     
     await parking.save();
@@ -176,11 +177,12 @@ const checkoutParking = async (req, res, next) => {
     
     // Calculate amount
     const stand = await Stand.findById(req.user.stand);
+    const vehicleRate = stand.pricing[parking.vehicleType];
     parking.amount = calculateAmount(
       parking.inTime, 
       parking.outTime, 
       parking.vehicleType, 
-      stand.hourlyRate
+      vehicleRate
     );
     
     await parking.save();

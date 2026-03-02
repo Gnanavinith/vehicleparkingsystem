@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../../../config/axios';
 import { FaCar, FaMotorcycle, FaBicycle, FaSave } from 'react-icons/fa';
 import { FiCheck } from 'react-icons/fi';
 
@@ -93,7 +95,7 @@ const VEHICLES = [
     desc: 'Standard 4-wheeler rate',
   },
   {
-    key: 'motorcycle',
+    key: 'bike', // API uses 'bike' but UI shows as 'Motorcycle'
     label: 'Motorcycle',
     icon: FaMotorcycle,
     color: '#d97706',
@@ -113,25 +115,159 @@ const VEHICLES = [
 ];
 
 const PricingSettings = () => {
+  const queryClient = useQueryClient();
+  
+  // Fetch current pricing
+  const { data: pricingData, isLoading, error } = useQuery({
+    queryKey: ['stand-pricing'],
+    queryFn: async () => {
+      try {
+        console.log('Fetching pricing data...');
+        const response = await api.get('/pricing/stand');
+        console.log('Pricing API response:', response.data);
+        return response.data.data;
+      } catch (error) {
+        console.error('Pricing API error:', error.response?.data || error.message);
+        throw error;
+      }
+    },
+    staleTime: 300000, // 5 minutes
+    retry: false, // No retry to avoid spam
+  });
+  
   const [rates, setRates] = useState(
-    Object.fromEntries(VEHICLES.map(v => [v.key, v.default]))
+    Object.fromEntries(VEHICLES.map(v => [v.key, parseFloat(v.default) || 0]))
   );
+  
+  // Debug: Log rates changes
+  useEffect(() => {
+    console.log('Rates updated:', rates);
+  }, [rates]);
   const [saved, setSaved] = useState(false);
+  
+  // Update rates when pricing data loads
+  useEffect(() => {
+    console.log('Pricing data received:', pricingData);
+    if (pricingData) {
+      // Handle both simple numeric values and object structure
+      const newRates = {
+        car: typeof pricingData.car === 'object' ? (pricingData.car.firstHourRate || 20) : (pricingData.car || 20),
+        bike: typeof pricingData.bike === 'object' ? (pricingData.bike.firstHourRate || 10) : (pricingData.bike || 10),
+        cycle: typeof pricingData.cycle === 'object' ? (pricingData.cycle.firstHourRate || 5) : (pricingData.cycle || 5),
+      };
+      
+      // Ensure all values are numbers
+      const numericRates = {
+        car: parseFloat(newRates.car) || 20,
+        bike: parseFloat(newRates.bike) || 10,
+        cycle: parseFloat(newRates.cycle) || 5,
+      };
+      
+      console.log('Setting rates to:', numericRates);
+      setRates(numericRates);
+    }
+  }, [pricingData]);
+  
   const [saving, setSaving] = useState(false);
 
   const handleChange = (key, val) => {
     setSaved(false);
-    setRates(prev => ({ ...prev, [key]: val }));
+    // Ensure we store the value as a number
+    const numericValue = parseFloat(val) || 0;
+    setRates(prev => ({ ...prev, [key]: numericValue }));
   };
 
+  const updatePricingMutation = useMutation({
+    mutationFn: async (pricingData) => {
+      console.log('Sending pricing update request:', pricingData);
+      const response = await api.put('/pricing/stand', {
+        pricing: pricingData
+      });
+      console.log('Pricing update response:', response.data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setSaving(false);
+      setSaved(true);
+      console.log('Pricing updated successfully:', data);
+      queryClient.invalidateQueries(['stand-pricing']);
+      setTimeout(() => setSaved(false), 3000);
+    },
+    onError: (error) => {
+      setSaving(false);
+      console.error('Error updating pricing:', error);
+      console.error('Error response:', error.response?.data);
+      
+      let errorMessage = 'Failed to update pricing';
+      if (error.response?.data?.message) {
+        errorMessage += ': ' + error.response.data.message;
+      } else if (error.message) {
+        errorMessage += ': ' + error.message;
+      }
+      
+      alert(errorMessage);
+    }
+  });
+  
   const handleSave = async () => {
     setSaving(true);
-    await new Promise(r => setTimeout(r, 600)); // replace with real API call
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    
+    // Prepare pricing data to match API expectations
+    const pricingData = {
+      cycle: parseFloat(rates.cycle) || 0,
+      bike: parseFloat(rates.bike) || 0,
+      car: parseFloat(rates.car) || 0,
+    };
+    
+    console.log('Saving pricing data:', pricingData);
+    
+    updatePricingMutation.mutate(pricingData);
   };
 
+  if (isLoading) return (
+    <>
+      <style>{css}</style>
+      <div className="ps-wrap" style={{ padding: '28px 32px', minHeight: '100vh', background: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{
+          width: 32, height: 32,
+          border: '3px solid #f3f4f6',
+          borderTopColor: '#0a0a0a',
+          borderRadius: '50%',
+          animation: 'spin .8s linear infinite',
+        }} />
+      </div>
+    </>
+  );
+  
+  if (error) return (
+    <>
+      <style>{css}</style>
+      <div className="ps-wrap" style={{ padding: '28px 32px', minHeight: '100vh', background: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{
+          padding: '20px',
+          background: '#fef2f2',
+          border: '1px solid #fecaca',
+          borderRadius: '10px',
+          color: '#dc2626',
+          fontFamily: 'DM Mono, monospace',
+          fontSize: '14px',
+          maxWidth: '500px',
+        }}>
+          <div style={{ marginBottom: '10px', fontWeight: 'bold' }}>Error loading pricing data</div>
+          <div>Message: {error.message}</div>
+          {error.response?.data?.message && (
+            <div style={{ marginTop: '8px', fontSize: '12px' }}>
+              Backend Message: {error.response.data.message}
+            </div>
+          )}
+          <div style={{ marginTop: '12px', fontSize: '12px', color: '#999' }}>
+            Status: {error.response?.status || 'Unknown'}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+  
   return (
     <>
       <style>{css}</style>
@@ -158,8 +294,8 @@ const PricingSettings = () => {
                 <FiCheck size={12} /> Rates saved
               </span>
             )}
-            <button className="save-btn" onClick={handleSave} disabled={saving}>
-              {saving ? (
+            <button className="save-btn" onClick={handleSave} disabled={saving || updatePricingMutation.isPending}>
+              {(saving || updatePricingMutation.isPending) ? (
                 <>
                   <span style={{
                     width: 13, height: 13,
@@ -216,7 +352,7 @@ const PricingSettings = () => {
                   className="rate-input"
                   type="number"
                   min={0}
-                  value={rates[key]}
+                  value={typeof rates[key] === 'object' ? rates[key].firstHourRate : rates[key]}
                   onChange={e => handleChange(key, e.target.value)}
                 />
               </div>
@@ -233,7 +369,7 @@ const PricingSettings = () => {
                   2 hrs cost
                 </span>
                 <span style={{ fontFamily: 'DM Serif Display, serif', fontSize: 16, color: '#0a0a0a' }}>
-                  ₹{(rates[key] * 2) || 0}
+                  ₹{(typeof rates[key] === 'object' ? rates[key].firstHourRate * 2 : rates[key] * 2) || 0}
                 </span>
               </div>
             </div>
@@ -263,7 +399,7 @@ const PricingSettings = () => {
                     {label}
                   </div>
                   <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: 22, color: '#0a0a0a', marginTop: 2 }}>
-                    ₹{rates[key]}<span style={{ fontSize: 11, color: '#bbb', fontFamily: 'DM Mono, monospace' }}>/hr</span>
+                    ₹{typeof rates[key] === 'object' ? rates[key].firstHourRate : rates[key]}<span style={{ fontSize: 11, color: '#bbb', fontFamily: 'DM Mono, monospace' }}>/hr</span>
                   </div>
                 </div>
               </div>

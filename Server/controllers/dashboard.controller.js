@@ -68,6 +68,23 @@ const getDashboardStats = async (req, res, next) => {
         status: 'active' 
       });
       
+      // Calculate today's revenue for this stand
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      const todayParkings = await Parking.find({
+        stand: userStand.stand._id,
+        outTime: {
+          $gte: startOfDay,
+          $lte: endOfDay
+        },
+        status: 'completed'
+      });
+      
+      const todayRevenue = todayParkings.reduce((sum, parking) => sum + (parking.amount || 0), 0);
+      
       stats = {
         stand: {
           name: userStand.stand.name,
@@ -89,10 +106,14 @@ const getDashboardStats = async (req, res, next) => {
             stand: userStand.stand._id,
             status: 'cancelled' 
           })
-        }
+        },
+        todayRevenue: todayRevenue
       };
+      
+      console.log('Stand admin dashboard stats:', stats);
     }
     
+    console.log('Sending dashboard response:', { success: true, data: stats });
     res.status(200).json({
       success: true,
       data: stats

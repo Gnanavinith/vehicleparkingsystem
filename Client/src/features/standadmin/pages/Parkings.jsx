@@ -63,7 +63,7 @@ const Parkings = () => {
       ),
     },
     {
-      key: 'entryTime',
+      key: 'inTime',
       label: 'Entry Time',
       render: (val) => (
         <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 12, color: '#555' }}>

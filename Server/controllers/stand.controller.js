@@ -217,11 +217,17 @@ const deleteStand = async (req, res, next) => {
       });
     }
 
-    // Check if stand has active parkings
-    // This would require checking the Parking model
-    // For now, we'll allow deletion
+    // First, delete any parking records associated with this stand
+    const Parking = require('../models/Parking');
+    await Parking.deleteMany({ stand: req.params.id });
 
-    await stand.remove();
+    // If the stand has an assigned admin, we need to delete the admin user as well
+    if (stand.admin) {
+      await User.findByIdAndDelete(stand.admin);
+    }
+
+    // Delete the stand
+    await Stand.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
       success: true,

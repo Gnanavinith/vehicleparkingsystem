@@ -13,25 +13,10 @@ const calculateAmount = (entryTime, exitTime, vehicleType, hourlyRate) => {
   // Calculate duration in minutes
   const durationInMinutes = Math.ceil((exit - entry) / (1000 * 60));
   
-  // Apply vehicle type multipliers
-  let multiplier = 1;
-  switch(vehicleType) {
-    case 'bike':
-      multiplier = 1.0; // Base rate
-      break;
-    case 'cycle':
-      multiplier = 0.5; // 50% of base rate
-      break;
-    case 'car':
-      multiplier = 2.0; // 200% of base rate
-      break;
-    default:
-      multiplier = 1.0;
-  }
-  
   // Calculate amount based on duration and hourly rate
+  // The hourlyRate passed here is already specific to the vehicle type
   const hours = durationInMinutes / 60;
-  const amount = Math.ceil(hours * hourlyRate * multiplier);
+  const amount = Math.ceil(hours * hourlyRate);
   
   return amount;
 };

@@ -12,9 +12,21 @@ const createStandValidation = Joi.object({
     'number.min': 'Capacity must be at least 1',
     'any.required': 'Capacity is required'
   }),
-  hourlyRate: Joi.number().min(0).required().messages({
-    'number.min': 'Hourly rate cannot be negative',
-    'any.required': 'Hourly rate is required'
+  pricing: Joi.object({
+    cycle: Joi.number().min(0).required().messages({
+      'number.min': 'Cycle rate cannot be negative',
+      'any.required': 'Cycle rate is required'
+    }),
+    bike: Joi.number().min(0).required().messages({
+      'number.min': 'Bike rate cannot be negative',
+      'any.required': 'Bike rate is required'
+    }),
+    car: Joi.number().min(0).required().messages({
+      'number.min': 'Car rate cannot be negative',
+      'any.required': 'Car rate is required'
+    })
+  }).required().messages({
+    'any.required': 'Pricing information is required'
   }),
   currency: Joi.string().valid('USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'SGD').required().messages({
     'any.required': 'Currency is required',
@@ -35,8 +47,16 @@ const updateStandValidation = Joi.object({
   capacity: Joi.number().integer().min(1).optional().messages({
     'number.min': 'Capacity must be at least 1'
   }),
-  hourlyRate: Joi.number().min(0).optional().messages({
-    'number.min': 'Hourly rate cannot be negative'
+  pricing: Joi.object({
+    cycle: Joi.number().min(0).optional().messages({
+      'number.min': 'Cycle rate cannot be negative'
+    }),
+    bike: Joi.number().min(0).optional().messages({
+      'number.min': 'Bike rate cannot be negative'
+    }),
+    car: Joi.number().min(0).optional().messages({
+      'number.min': 'Car rate cannot be negative'
+    })
   }),
   currency: Joi.string().valid('USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'SGD').optional().messages({
     'any.only': 'Invalid currency selected'

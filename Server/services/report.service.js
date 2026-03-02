@@ -9,7 +9,7 @@ const generateDailyReport = async (date = new Date()) => {
   endOfDay.setHours(23, 59, 59, 999);
 
   const parkings = await Parking.find({
-    entryTime: {
+    inTime: {
       $gte: startOfDay,
       $lte: endOfDay
     },
@@ -52,7 +52,7 @@ const generateMonthlyReport = async (month = new Date().getMonth(), year = new D
   const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
   const parkings = await Parking.find({
-    entryTime: {
+    inTime: {
       $gte: startDate,
       $lte: endDate
     },
@@ -83,7 +83,7 @@ const generateMonthlyReport = async (month = new Date().getMonth(), year = new D
 
   // Populate stats
   parkings.forEach(parking => {
-    const dateKey = parking.entryTime.toISOString().split('T')[0];
+    const dateKey = parking.inTime.toISOString().split('T')[0];
     if (dailyStats[dateKey]) {
       dailyStats[dateKey].totalParkings++;
       dailyStats[dateKey].totalRevenue += parking.amount || 0;

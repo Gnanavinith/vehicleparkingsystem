@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getReports } from '../api';
+import { getDailyReport, getMonthlyReport } from '../api';
 import { FaCar, FaRupeeSign, FaClock, FaChartBar } from 'react-icons/fa';
 import { FiDownload, FiCalendar, FiTrendingUp } from 'react-icons/fi';
 
@@ -93,20 +93,70 @@ const StatRow = ({ label, value, valueColor = '#0a0a0a', isLoading }) => (
     </span>
     {isLoading
       ? <Shimmer h={16} w={80} />
-      : <span style={{ fontFamily: 'DM Serif Display, serif', fontSize: 17, color: valueColor }}>{value}</span>
+      : <span style={{ fontFamily: 'DM Serif Display, serif', fontSize: 17, color: valueColor }}>
+          {valueColor === '#059669' && typeof value === 'number' 
+            ? `₹${value.toLocaleString('en-IN')}` 
+            : typeof value === 'number' 
+              ? value.toLocaleString('en-IN') 
+              : value}
+        </span>
     }
   </div>
 );
 
 const Reports = () => {
-  const { data: reports, isLoading } = useQuery({
-    queryKey: ['reports'],
-    queryFn: getReports,
+  const { data: dailyData, isLoading: dailyLoading, error: dailyError } = useQuery({
+    queryKey: ['daily-report'],
+    queryFn: getDailyReport,
+  });
+  
+  const { data: monthlyData, isLoading: monthlyLoading, error: monthlyError } = useQuery({
+    queryKey: ['monthly-report'],
+    queryFn: getMonthlyReport,
   });
 
-  // Use API data if available, fallback to mock
-  const daily   = reports?.daily   || { totalParkings: 42,   revenue: 1240,  avgDuration: '2.5 hrs' };
-  const monthly = reports?.monthly || { totalParkings: 1240, revenue: 32560, occupancyRate: '78%'   };
+  const isLoading = dailyLoading || monthlyLoading;
+  const hasError = dailyError || monthlyError;
+  
+  // Process daily data
+  const daily = {
+    totalParkings: dailyData?.totalParkings || 0,
+    revenue: dailyData?.totalRevenue || 0,
+    avgDuration: dailyData?.averageDuration ? 
+      `${Math.floor(dailyData.averageDuration / 60)}h ${dailyData.averageDuration % 60}m` : '0h 0m'
+  };
+  
+  // Process monthly data
+  const monthly = {
+    totalParkings: monthlyData?.totalParkings || 0,
+    revenue: monthlyData?.totalRevenue || 0,
+    occupancyRate: '78%' // This would need to be calculated based on capacity
+  };
+  
+  // Error display
+  if (hasError) {
+    return (
+      <>
+        <style>{css}</style>
+        <div className="rep-wrap" style={{ padding: '28px 32px', minHeight: '100vh', background: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{
+            padding: '20px',
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '10px',
+            color: '#dc2626',
+            fontFamily: 'DM Mono, monospace',
+            fontSize: '14px',
+            maxWidth: '500px',
+            textAlign: 'center'
+          }}>
+            <div style={{ marginBottom: '10px', fontWeight: 'bold' }}>Error loading reports</div>
+            <div>Please try refreshing the page</div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -150,7 +200,7 @@ const Reports = () => {
               </div>
               {isLoading
                 ? <Shimmer h={32} w="70%" />
-                : <div className="stat-num">{value}</div>
+                : <div className="stat-num">{typeof value === 'number' ? value.toLocaleString('en-IN') : value}</div>
               }
             </div>
           ))}

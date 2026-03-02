@@ -12,53 +12,7 @@ import { FaUsers, FaParking, FaDollarSign, FaChartLine, FaPlus, FaSearch } from 
 import { FiTrendingUp, FiTrendingDown, FiActivity, FiBarChart2, FiSettings, FiUserPlus, FiCheckCircle, FiAlertTriangle, FiAward, FiZap } from 'react-icons/fi';
 import { RiParkingBoxLine } from 'react-icons/ri';
 
-// ─── Mock API ──────────────────────────────────────────────────────────────────
-const standAdminApi = {
-  getDashboardStats: async () => ({
-    totalStaff: 8,
-    activeParkings: 24,
-    todayRevenue: 1240.50,
-    monthlyRevenue: 28450.75,
-    occupancyRate: 78,
-    pendingCheckouts: 5,
-  }),
-  getRevenueChart: async () => ([
-    { date: 'Jan', revenue: 12000, expenses: 4000, profit: 8000 },
-    { date: 'Feb', revenue: 14500, expenses: 4500, profit: 10000 },
-    { date: 'Mar', revenue: 13800, expenses: 4200, profit: 9600 },
-    { date: 'Apr', revenue: 16200, expenses: 5100, profit: 11100 },
-    { date: 'May', revenue: 15800, expenses: 4800, profit: 11000 },
-    { date: 'Jun', revenue: 17500, expenses: 5400, profit: 12100 },
-    { date: 'Jul', revenue: 18900, expenses: 5800, profit: 13100 },
-    { date: 'Aug', revenue: 18200, expenses: 5600, profit: 12600 },
-  ]),
-  getOccupancyData: async () => ([
-    { name: 'Mon', value: 72 },
-    { name: 'Tue', value: 85 },
-    { name: 'Wed', value: 91 },
-    { name: 'Thu', value: 88 },
-    { name: 'Fri', value: 95 },
-    { name: 'Sat', value: 78 },
-    { name: 'Sun', value: 60 },
-  ]),
-  getZoneDistribution: async () => ([
-    { name: 'Zone A', value: 35 },
-    { name: 'Zone B', value: 25 },
-    { name: 'Zone C', value: 20 },
-    { name: 'Zone D', value: 20 },
-  ]),
-  getHourlyActivity: async () => ([
-    { hour: '6am',  vehicles: 8 },
-    { hour: '8am',  vehicles: 22 },
-    { hour: '10am', vehicles: 35 },
-    { hour: '12pm', vehicles: 42 },
-    { hour: '2pm',  vehicles: 38 },
-    { hour: '4pm',  vehicles: 45 },
-    { hour: '6pm',  vehicles: 39 },
-    { hour: '8pm',  vehicles: 25 },
-    { hour: '10pm', vehicles: 12 },
-  ]),
-};
+import { getDashboardStats, getRevenueChart, getOccupancyData, getZoneDistribution, getHourlyActivity } from '../api';
 
 // ─── Design Tokens (matches Staff dashboard) ──────────────────────────────────
 const PIE_COLORS = ['#0a0a0a', '#d97706', '#0d9488', '#1d4ed8'];
@@ -244,11 +198,17 @@ const Dashboard = () => {
     if (role && role !== 'stand_admin') navigate('/login');
   }, [role, navigate]);
 
-  const { data: stats, isLoading, error } = useQuery({ queryKey: ['stand-stats'], queryFn: standAdminApi.getDashboardStats, staleTime: 60000 });
-  const { data: revenueData }      = useQuery({ queryKey: ['stand-revenue'],   queryFn: standAdminApi.getRevenueChart,     staleTime: 300000 });
-  const { data: occupancyData }    = useQuery({ queryKey: ['stand-occupancy'], queryFn: standAdminApi.getOccupancyData,    staleTime: 300000 });
-  const { data: distributionData } = useQuery({ queryKey: ['stand-dist'],      queryFn: standAdminApi.getZoneDistribution, staleTime: 300000 });
-  const { data: activityData }     = useQuery({ queryKey: ['stand-activity'],  queryFn: standAdminApi.getHourlyActivity,   staleTime: 300000 });
+  const { data: stats, isLoading, error } = useQuery({ 
+    queryKey: ['stand-stats'], 
+    queryFn: getDashboardStats, 
+    staleTime: 60000
+  });
+  
+  console.log('Dashboard stats in component:', stats);
+  const { data: revenueData }      = useQuery({ queryKey: ['stand-revenue'],   queryFn: getRevenueChart,     staleTime: 300000 });
+  const { data: occupancyData }    = useQuery({ queryKey: ['stand-occupancy'], queryFn: getOccupancyData,    staleTime: 300000 });
+  const { data: distributionData } = useQuery({ queryKey: ['stand-dist'],      queryFn: getZoneDistribution, staleTime: 300000 });
+  const { data: activityData }     = useQuery({ queryKey: ['stand-activity'],  queryFn: getHourlyActivity,   staleTime: 300000 });
 
   if (isLoading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
@@ -256,6 +216,11 @@ const Dashboard = () => {
       <div style={{ width: 32, height: 32, border: '3px solid #ebebeb', borderTopColor: '#0a0a0a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
     </div>
   );
+  
+  // Debug display
+  if (stats) {
+    console.log('Stats structure:', JSON.stringify(stats, null, 2));
+  }
 
   if (error) return (
     <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 12, padding: '14px 18px', color: '#dc2626', fontSize: 13, fontFamily: 'DM Mono, monospace' }}>
@@ -333,7 +298,7 @@ const Dashboard = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
           <KPI
             label="Total Staff"
-            value={fmt(stats?.totalStaff || 0)}
+            value={fmt(stats?.staff?.total || 0)}
             icon={FaUsers}
             color="#1d4ed8"
             trend={8.2}
@@ -341,7 +306,7 @@ const Dashboard = () => {
           />
           <KPI
             label="Active Parkings"
-            value={fmt(stats?.activeParkings || 0)}
+            value={fmt(stats?.parkings?.active || 0)}
             icon={RiParkingBoxLine}
             color="#059669"
             trend={15.3}
@@ -349,7 +314,7 @@ const Dashboard = () => {
           />
           <KPI
             label="Today's Revenue"
-            value={`₹${stats?.todayRevenue?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}`}
+            value={`₹${(stats?.todayRevenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
             icon={FaDollarSign}
             color="#d97706"
             trend={12.4}
@@ -357,7 +322,7 @@ const Dashboard = () => {
           />
           <KPI
             label="Occupancy Rate"
-            value={`${stats?.occupancyRate || 0}%`}
+            value={`${stats?.stand ? Math.round((stats.stand.currentOccupancy / stats.stand.capacity) * 100) : 0}%`}
             icon={FaChartLine}
             color="#0d9488"
             trend={-3.2}

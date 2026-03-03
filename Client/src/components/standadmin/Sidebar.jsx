@@ -10,7 +10,6 @@ const css = `
 
   @keyframes sf-in { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:none} }
   @keyframes blink  { 0%,100%{opacity:1} 50%{opacity:0} }
-
   .sa-root { animation: sf-in .28s cubic-bezier(.22,1,.36,1); font-family:'DM Sans',sans-serif; }
 
   .pn {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { getParkingById, checkoutParking, getAllParkings, searchParkingByVehicleNumber, getProfile } from '../api';
+import { getParkingById, checkoutParking, getAllParkings, searchParkingByVehicleNumber, getProfile, getStandPricing } from '../api';
 import { FaSearch, FaCar, FaMotorcycle, FaBicycle, FaWhatsapp, FaTimes, FaCheckCircle } from 'react-icons/fa';
 import { FiAlertTriangle } from 'react-icons/fi';
 import { MdOutlineCheckCircle } from 'react-icons/md';
@@ -180,11 +180,28 @@ const Checkout = () => {
   const [filterVehicle,   setFilterVehicle]   = useState('all');
   const [standPricing,    setStandPricing]    = useState(null);
 
-  useQuery({
+  const { data: profileData } = useQuery({
     queryKey: ['profile'],
     queryFn: getProfile,
-    onSuccess: d => { if (d?.stand?.pricing) setStandPricing(d.stand.pricing); },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  const { data: pricingData } = useQuery({
+    queryKey: ['stand-pricing'],
+    queryFn: getStandPricing,
+    staleTime: 5 * 60 * 1000,
+    enabled: !profileData?.stand?.pricing,
+  });
+
+  React.useEffect(() => {
+    if (profileData?.stand?.pricing) {
+      console.log('Profile pricing data:', profileData.stand.pricing);
+      setStandPricing(profileData.stand.pricing);
+    } else if (pricingData) {
+      console.log('Direct pricing data:', pricingData);
+      setStandPricing(pricingData);
+    }
+  }, [profileData, pricingData]);
 
   const { data: allParkings = [], isLoading } = useQuery({
     queryKey: ['all-parkings'],
@@ -202,14 +219,73 @@ const Checkout = () => {
   });
 
   const calculateAmount = () => {
-    if (!selectedParking) return 0;
-    const rates = { cycle: standPricing?.cycle || 5, bike: standPricing?.bike || 10, car: standPricing?.car || 20 };
+    if (!selectedParking) {
+      console.log('❌ No parking selected');
+      return 0;
+    }
+    
+    if (!standPricing) {
+      console.log('❌ No stand pricing available');
+      return 0;
+    }
+    
     const entry = new Date(selectedParking.createdAt);
-    if (isNaN(entry.getTime())) return 0;
-    const hours = Math.max(1, Math.floor((new Date() - entry) / 3600000));
-    const rate  = rates[selectedParking.vehicleType] || rates.bike;
-    const amt   = hours * rate;
-    return isNaN(amt) ? 0 : amt;
+    if (isNaN(entry.getTime())) {
+      console.log('❌ Invalid entry time');
+      return 0;
+    }
+    
+    const now = new Date();
+    const durationInMinutes = Math.ceil((now - entry) / (1000 * 60));
+    const totalHours = durationInMinutes / 60;
+    
+    console.log('📊 Duration:', { durationInMinutes, totalHours, hours: Math.floor(totalHours), mins: durationInMinutes % 60 });
+    console.log('📊 Stand pricing:', JSON.stringify(standPricing, null, 2));
+    console.log('🚗 Vehicle type:', selectedParking.vehicleType);
+    
+    // Get pricing for vehicle type - handle both formats
+    const vehiclePricing = standPricing[selectedParking.vehicleType];
+    if (!vehiclePricing) {
+      console.log('❌ No pricing for vehicle type:', selectedParking.vehicleType);
+      return 0;
+    }
+    
+    console.log('💰 Vehicle pricing:', vehiclePricing);
+    
+    // Handle both formats: structured {firstHourRate, additionalHourRate} or simple number
+    let firstHourRate, additionalHourRate;
+    
+    if (typeof vehiclePricing === 'number') {
+      // Simple format (just a rate per hour)
+      firstHourRate = vehiclePricing;
+      additionalHourRate = Math.floor(vehiclePricing / 2);
+      console.log('📝 Using simple rate format');
+    } else if (vehiclePricing.firstHourRate !== undefined) {
+      // Structured format
+      firstHourRate = vehiclePricing.firstHourRate;
+      additionalHourRate = vehiclePricing.additionalHourRate || Math.floor(firstHourRate / 2);
+      console.log('📝 Using structured rate format');
+    } else {
+      console.log('❌ Invalid pricing format');
+      return 0;
+    }
+    
+    console.log('💵 Rates:', { firstHourRate, additionalHourRate });
+    
+    let amount = 0;
+    if (totalHours <= 1) {
+      // Only first hour (or part of it)
+      amount = firstHourRate;
+      console.log('⏱️ First hour only');
+    } else {
+      // First hour + additional hours
+      const additionalHours = Math.ceil(totalHours - 1);
+      amount = firstHourRate + (additionalHours * additionalHourRate);
+      console.log('⏱️ First hour +', additionalHours, 'additional hours');
+    }
+    
+    console.log('💵 Calculated amount:', amount, '→ Final:', Math.ceil(amount));
+    return Math.ceil(amount);
   };
 
   const handleSearch = async e => {

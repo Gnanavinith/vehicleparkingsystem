@@ -1,5 +1,5 @@
-const calculateAmount = (entryTime, exitTime, vehicleType, hourlyRate) => {
-  if (!entryTime || !exitTime || !hourlyRate) {
+const calculateAmount = (entryTime, exitTime, vehicleType, pricingData) => {
+  if (!entryTime || !exitTime || !pricingData) {
     throw new Error('Missing required parameters');
   }
 
@@ -13,12 +13,27 @@ const calculateAmount = (entryTime, exitTime, vehicleType, hourlyRate) => {
   // Calculate duration in minutes
   const durationInMinutes = Math.ceil((exit - entry) / (1000 * 60));
   
-  // Calculate amount based on duration and hourly rate
-  // The hourlyRate passed here is already specific to the vehicle type
-  const hours = durationInMinutes / 60;
-  const amount = Math.ceil(hours * hourlyRate);
-  
-  return amount;
+  // Handle different pricing structures
+  if (typeof pricingData === 'number') {
+    // Simple hourly rate (backward compatibility)
+    const hours = durationInMinutes / 60;
+    return Math.ceil(hours * pricingData);
+  } else if (pricingData.firstHourRate !== undefined && pricingData.additionalHourRate !== undefined) {
+    // Two-tier pricing structure
+    const totalHours = durationInMinutes / 60;
+    
+    if (totalHours <= 1) {
+      // Only first hour
+      return Math.ceil(pricingData.firstHourRate);
+    } else {
+      // First hour + additional hours
+      const additionalHours = Math.ceil(totalHours - 1);
+      const amount = pricingData.firstHourRate + (additionalHours * pricingData.additionalHourRate);
+      return Math.ceil(amount);
+    }
+  } else {
+    throw new Error('Invalid pricing data structure');
+  }
 };
 
 const calculateDuration = (entryTime, exitTime) => {

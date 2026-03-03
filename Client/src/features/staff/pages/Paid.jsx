@@ -113,11 +113,34 @@ const calcAmount = (p, pricing) => {
   const checkoutDate = new Date(p.outTime);
   const createdDate = new Date(p.createdAt);
   if (isNaN(checkoutDate.getTime()) || isNaN(createdDate.getTime())) return 0;
-  const hours = Math.max(1, Math.floor((checkoutDate - createdDate) / 3600000));
-  const rate = p.vehicleType === 'car' ? (pricing?.car || 20)
-             : p.vehicleType === 'cycle' ? (pricing?.cycle || 5)
-             : (pricing?.bike || 10);
-  return hours * rate;
+  
+  const durationInMinutes = Math.ceil((checkoutDate - createdDate) / 60000);
+  const totalHours = durationInMinutes / 60;
+  
+  // Get vehicle-specific pricing
+  let vehiclePricing;
+  if (p.vehicleType === 'car') {
+    vehiclePricing = pricing?.car || { firstHourRate: 20, additionalHourRate: 10 };
+  } else if (p.vehicleType === 'cycle') {
+    vehiclePricing = pricing?.cycle || { firstHourRate: 5, additionalHourRate: 3 };
+  } else {
+    vehiclePricing = pricing?.bike || { firstHourRate: 10, additionalHourRate: 5 };
+  }
+  
+  // Handle both simple rate and structured pricing
+  if (typeof vehiclePricing === 'number') {
+    const hours = Math.max(1, Math.floor(totalHours));
+    return hours * vehiclePricing;
+  } else {
+    // Structured pricing with first hour and additional hours
+    if (totalHours <= 1) {
+      return Math.ceil(vehiclePricing.firstHourRate);
+    } else {
+      const additionalHours = Math.ceil(totalHours - 1);
+      const amount = vehiclePricing.firstHourRate + (additionalHours * vehiclePricing.additionalHourRate);
+      return Math.ceil(amount);
+    }
+  }
 };
 
 const fmt = (n) => new Intl.NumberFormat('en-IN').format(n);

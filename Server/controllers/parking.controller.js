@@ -178,11 +178,25 @@ const checkoutParking = async (req, res, next) => {
     // Calculate amount
     const stand = await Stand.findById(req.user.stand);
     const vehicleRate = stand.pricing[parking.vehicleType];
+    
+    // Handle different pricing data structures
+    let pricingData;
+    if (typeof vehicleRate === 'object' && vehicleRate !== null) {
+      // Already structured pricing data
+      pricingData = vehicleRate;
+    } else {
+      // Simple rate, convert to structured format
+      pricingData = {
+        firstHourRate: vehicleRate,
+        additionalHourRate: Math.floor(vehicleRate / 2) || 3
+      };
+    }
+    
     parking.amount = calculateAmount(
       parking.inTime, 
       parking.outTime, 
       parking.vehicleType, 
-      vehicleRate
+      pricingData
     );
     
     await parking.save();

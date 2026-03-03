@@ -20,6 +20,8 @@ const css = `
     display:flex; align-items:center;
     padding:0 28px; gap:12px;
   }
+  
+
 
   /* ── Search ── */
   .tb-search { position:relative; flex:1; max-width:260px; }
